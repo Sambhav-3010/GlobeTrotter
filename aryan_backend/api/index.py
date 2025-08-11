@@ -6,17 +6,12 @@ from bson import ObjectId
 import random
 from datetime import datetime
 
-# --- Constants ---
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # --- Constants ---
-MONGO_URI = os.getenv('MONGO_URI', "mongodb+srv://sambhav:t5uKgPk3xgeXcf7A@cluster0.s7uiifm.mongodb.net/")
-DB_NAME = os.getenv('DB_NAME', "test")
-USERS_COLLECTION = os.getenv('USERS_COLLECTION', "users")
-TRIPS_COLLECTION = os.getenv('TRIPS_COLLECTION', "trips")
+MONGO_URI = "mongodb+srv://sambhav:t5uKgPk3xgeXcf7A@cluster0.s7uiifm.mongodb.net/"
+DB_NAME = "test"
+USERS_COLLECTION = "users"
+TRIPS_COLLECTION = "trips"
 
 # Fallback recommendations for Indian cities and international destinations
 FALLBACK_RECOMMENDATIONS = [
