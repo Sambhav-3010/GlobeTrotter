@@ -133,5 +133,9 @@ def recommend_cities():
     }
     return jsonify(result)
 
+@app.route('/', methods=["GET"])
+def home():
+    return 'Hello from backend'
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, threaded=True)
