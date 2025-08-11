@@ -65,7 +65,7 @@ export default function HotelsPage() {
 
   useEffect(() => {
     // Load saved hotel selections
-    const saved = localStorage.getItem("globetrotter-hotel-selections")
+    const saved = localStorage.getItem("hotel-selections")
     if (saved) {
       setSelectedHotels(JSON.parse(saved))
     }
@@ -74,20 +74,20 @@ export default function HotelsPage() {
   const handleAddHotel = (item: HotelItem) => {
     const updated = [...selectedHotels, { ...item, id: `${item.id}-${Date.now()}` }]
     setSelectedHotels(updated)
-    localStorage.setItem("globetrotter-hotel-selections", JSON.stringify(updated))
+    localStorage.setItem("hotel-selections", JSON.stringify(updated))
 
     // Update progress
-    const progress = JSON.parse(localStorage.getItem("globetrotter-trip-progress") || "[]")
+    const progress = JSON.parse(localStorage.getItem("trip-progress") || "[]")
     if (!progress.includes("hotels")) {
       progress.push("hotels")
-      localStorage.setItem("globetrotter-trip-progress", JSON.stringify(progress))
+      localStorage.setItem("trip-progress", JSON.stringify(progress))
     }
   }
 
   const handleRemoveHotel = (id: string) => {
     const updated = selectedHotels.filter((item) => item.id !== id)
     setSelectedHotels(updated)
-    localStorage.setItem("globetrotter-hotel-selections", JSON.stringify(updated))
+    localStorage.setItem("hotel-selections", JSON.stringify(updated))
   }
 
   const getFilteredResults = () => {

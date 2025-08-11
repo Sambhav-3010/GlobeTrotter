@@ -90,7 +90,7 @@ export default function DiningPage() {
 
   useEffect(() => {
     // Load saved dining selections
-    const saved = localStorage.getItem("globetrotter-dining-selections")
+    const saved = localStorage.getItem("dining-selections")
     if (saved) {
       setSelectedRestaurants(JSON.parse(saved))
     }
@@ -99,20 +99,20 @@ export default function DiningPage() {
   const handleAddRestaurant = (item: DiningItem) => {
     const updated = [...selectedRestaurants, { ...item, id: `${item.id}-${Date.now()}` }]
     setSelectedRestaurants(updated)
-    localStorage.setItem("globetrotter-dining-selections", JSON.stringify(updated))
+    localStorage.setItem("terdining-selections", JSON.stringify(updated))
 
     // Update progress
-    const progress = JSON.parse(localStorage.getItem("globetrotter-trip-progress") || "[]")
+    const progress = JSON.parse(localStorage.getItem("trip-progress") || "[]")
     if (!progress.includes("dining")) {
       progress.push("dining")
-      localStorage.setItem("globetrotter-trip-progress", JSON.stringify(progress))
+      localStorage.setItem("trip-progress", JSON.stringify(progress))
     }
   }
 
   const handleRemoveRestaurant = (id: string) => {
     const updated = selectedRestaurants.filter((item) => item.id !== id)
     setSelectedRestaurants(updated)
-    localStorage.setItem("globetrotter-dining-selections", JSON.stringify(updated))
+    localStorage.setItem("dining-selections", JSON.stringify(updated))
   }
 
   const getFilteredResults = () => {

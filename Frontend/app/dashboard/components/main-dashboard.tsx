@@ -5,9 +5,6 @@ import { motion } from "framer-motion"
 import { Plane, Sun, Moon, User, LogOut, Zap, MapPin, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "../../providers/theme-provider"
-import AITripPlanner from "./ai-trip-planner"
-import ManualItineraryBuilder from "./manual-itinerary-builder"
-import ProfilePage from "./profile-page"
 import { useToast } from "@/hooks/use-toast"
 
 const trendingDestinations = [
@@ -44,16 +41,16 @@ export default function MainDashboard() {
   const [userData, setUserData] = useState<any>(null)
 
   useEffect(() => {
-    const savedData = localStorage.getItem("globetrotter-onboarding")
+    const savedData = localStorage.getItem("onboarding")
     if (savedData) {
       setUserData(JSON.parse(savedData))
     }
   }, [])
 
   const handleSignOut = () => {
-    localStorage.removeItem("globetrotter-onboarding")
-    localStorage.removeItem("globetrotter-step")
-    localStorage.removeItem("globetrotter-theme")
+    localStorage.removeItem("onboarding")
+    localStorage.removeItem("step")
+    localStorage.removeItem("theme")
 
     toast({
       title: "Signed out successfully",
@@ -63,18 +60,6 @@ export default function MainDashboard() {
     setTimeout(() => {
       window.location.href = "/"
     }, 1000)
-  }
-
-  if (currentView === "ai-planner") {
-    return <AITripPlanner onBack={() => setCurrentView("main")} />
-  }
-
-  if (currentView === "manual-builder") {
-    return <ManualItineraryBuilder onBack={() => setCurrentView("main")} />
-  }
-
-  if (currentView === "profile") {
-    return <ProfilePage onBack={() => setCurrentView("main")} userData={userData} />
   }
 
   return (

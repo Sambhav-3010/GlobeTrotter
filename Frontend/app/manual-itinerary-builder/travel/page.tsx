@@ -93,7 +93,7 @@ export default function TravelPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const saved = JSON.parse(localStorage.getItem("globetrotter-trip-details") || "{}");
+      const saved = JSON.parse(localStorage.getItem("trip-details") || "{}");
       console.log(saved);
       const response = await fetch("", {
         method: "POST",
@@ -120,18 +120,18 @@ export default function TravelPage() {
     ];
     setSelectedTravel(updated);
     localStorage.setItem(
-      "globetrotter-travel-selections",
+      "travel-selections",
       JSON.stringify(updated)
     );
 
     // Update progress
     const progress = JSON.parse(
-      localStorage.getItem("globetrotter-trip-progress") || "[]"
+      localStorage.getItem("trip-progress") || "[]"
     );
     if (!progress.includes("travel")) {
       progress.push("travel");
       localStorage.setItem(
-        "globetrotter-trip-progress",
+        "trip-progress",
         JSON.stringify(progress)
       );
     }
@@ -141,7 +141,7 @@ export default function TravelPage() {
     const updated = selectedTravel.filter((item) => item.id !== id);
     setSelectedTravel(updated);
     localStorage.setItem(
-      "globetrotter-travel-selections",
+      "travel-selections",
       JSON.stringify(updated)
     );
   };

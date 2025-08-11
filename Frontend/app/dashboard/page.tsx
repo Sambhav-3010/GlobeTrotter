@@ -64,7 +64,7 @@ export default function DashboardPage() {
     localStorage.removeItem("f_name")
     localStorage.removeItem("l_name")
     localStorage.removeItem("email")
-    localStorage.removeItem("globetrotter-theme")
+    localStorage.removeItem("theme")
 
     toast({
       title: "Signed out successfully",

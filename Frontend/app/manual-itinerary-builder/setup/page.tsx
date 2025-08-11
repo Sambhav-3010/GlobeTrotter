@@ -40,10 +40,10 @@ export default function TripSetupPage() {
         totalSpent: 0,
       }
 
-      localStorage.setItem("globetrotter-trip-details", JSON.stringify(tripDetails))
-      localStorage.setItem("globetrotter-trip-progress", JSON.stringify([]))
+      localStorage.setItem("trip-details", JSON.stringify(tripDetails))
+      localStorage.setItem("trip-progress", JSON.stringify([]))
       localStorage.setItem(
-        "globetrotter-trip-selections",
+        "trip-selections",
         JSON.stringify({
           travel: [],
           hotels: [],

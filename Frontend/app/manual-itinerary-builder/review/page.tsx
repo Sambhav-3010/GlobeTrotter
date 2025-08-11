@@ -41,11 +41,11 @@ export default function ReviewPage() {
   })
 
   useEffect(() => {
-    const savedDetails = localStorage.getItem("globetrotter-trip-details")
-    const travelSelections = localStorage.getItem("globetrotter-travel-selections")
-    const hotelSelections = localStorage.getItem("globetrotter-hotel-selections")
-    const activitySelections = localStorage.getItem("globetrotter-activity-selections")
-    const diningSelections = localStorage.getItem("globetrotter-dining-selections")
+    const savedDetails = localStorage.getItem("trip-details")
+    const travelSelections = localStorage.getItem("travel-selections")
+    const hotelSelections = localStorage.getItem("hotel-selections")
+    const activitySelections = localStorage.getItem("activity-selections")
+    const diningSelections = localStorage.getItem("dining-selections")
 
     if (savedDetails) {
       setTripDetails(JSON.parse(savedDetails))

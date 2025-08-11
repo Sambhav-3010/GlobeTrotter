@@ -257,7 +257,7 @@ export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("globetrotter-itinerary")
+    const saved = localStorage.getItem("itinerary")
     if (saved) {
       try {
         const parsedState = JSON.parse(saved)
@@ -270,7 +270,7 @@ export const ItineraryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Save to localStorage whenever state changes
   useEffect(() => {
-    localStorage.setItem("globetrotter-itinerary", JSON.stringify(state))
+    localStorage.setItem("itinerary", JSON.stringify(state))
   }, [state])
 
   // Helper functions

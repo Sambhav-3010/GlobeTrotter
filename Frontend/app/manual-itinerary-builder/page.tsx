@@ -56,8 +56,8 @@ export default function ManualItineraryBuilderPage() {
 
   useEffect(() => {
     // Load trip details and progress from localStorage
-    const savedDetails = localStorage.getItem("globetrotter-trip-details")
-    const savedProgress = localStorage.getItem("globetrotter-trip-progress")
+    const savedDetails = localStorage.getItem("trip-details")
+    const savedProgress = localStorage.getItem("trip-progress")
 
     if (savedDetails) {
       setTripDetails(JSON.parse(savedDetails))

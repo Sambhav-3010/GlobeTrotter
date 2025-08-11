@@ -40,8 +40,8 @@ export default function OnboardingContainer() {
 
   // Load saved data on mount
   useEffect(() => {
-    const savedData = localStorage.getItem("globetrotter-onboarding")
-    const savedStep = localStorage.getItem("globetrotter-step")
+    const savedData = localStorage.getItem("onboarding")
+    const savedStep = localStorage.getItem("step")
 
     if (savedData) {
       setUserData(JSON.parse(savedData))
@@ -53,8 +53,8 @@ export default function OnboardingContainer() {
 
   // Save data whenever it changes
   useEffect(() => {
-    localStorage.setItem("globetrotter-onboarding", JSON.stringify(userData))
-    localStorage.setItem("globetrotter-step", currentStep.toString())
+    localStorage.setItem("onboarding", JSON.stringify(userData))
+    localStorage.setItem("step", currentStep.toString())
   }, [userData, currentStep])
 
   const nextStep = () => {
@@ -104,7 +104,6 @@ export default function OnboardingContainer() {
               updateUserData={updateUserData}
               nextStep={nextStep}
               prevStep={prevStep}
-              currentStep={currentStep}
             />
           </motion.div>
         </AnimatePresence>

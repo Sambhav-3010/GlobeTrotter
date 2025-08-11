@@ -83,7 +83,7 @@ export default function ActivitiesPage() {
 
   useEffect(() => {
     // Load saved activity selections
-    const saved = localStorage.getItem("globetrotter-activity-selections")
+    const saved = localStorage.getItem("activity-selections")
     if (saved) {
       setSelectedActivities(JSON.parse(saved))
     }
@@ -92,20 +92,20 @@ export default function ActivitiesPage() {
   const handleAddActivity = (item: ActivityItem) => {
     const updated = [...selectedActivities, { ...item, id: `${item.id}-${Date.now()}` }]
     setSelectedActivities(updated)
-    localStorage.setItem("globetrotter-activity-selections", JSON.stringify(updated))
+    localStorage.setItem("activity-selections", JSON.stringify(updated))
 
     // Update progress
-    const progress = JSON.parse(localStorage.getItem("globetrotter-trip-progress") || "[]")
+    const progress = JSON.parse(localStorage.getItem("trip-progress") || "[]")
     if (!progress.includes("activities")) {
       progress.push("activities")
-      localStorage.setItem("globetrotter-trip-progress", JSON.stringify(progress))
+      localStorage.setItem("trip-progress", JSON.stringify(progress))
     }
   }
 
   const handleRemoveActivity = (id: string) => {
     const updated = selectedActivities.filter((item) => item.id !== id)
     setSelectedActivities(updated)
-    localStorage.setItem("globetrotter-activity-selections", JSON.stringify(updated))
+    localStorage.setItem("activity-selections", JSON.stringify(updated))
   }
 
   const getFilteredResults = () => {

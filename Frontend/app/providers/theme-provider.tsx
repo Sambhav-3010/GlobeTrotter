@@ -16,14 +16,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light")
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("globetrotter-theme") as Theme
+    const savedTheme = localStorage.getItem("theme") as Theme
     if (savedTheme) {
       setTheme(savedTheme)
     }
   }, [])
 
   useEffect(() => {
-    localStorage.setItem("globetrotter-theme", theme)
+    localStorage.setItem("theme", theme)
     document.documentElement.classList.toggle("dark", theme === "dark")
 
     // Apply theme-specific text colors
