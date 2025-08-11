@@ -20,6 +20,7 @@ router.post("/history", protect, async (req, res) => {
       $push: {
         placesVisited: addTrip.map(trip => trip.place_of_visit),
         recentlyVisited: addTrip[addTrip.length - 1]?.place_of_visit || null,
+        numberOfTrips: addTrip.length,
       },
     }, { new: true, runValidators: true });
 
