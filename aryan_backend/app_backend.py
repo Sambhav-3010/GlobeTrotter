@@ -120,16 +120,11 @@ def recommend_cities():
     sec3 = get_places_by_city(user_id, top_n=top_n, exclude=sec1 + sec2)
     result = {
         "user": {
-            "user_id": str(user_id),
-            "first_name": user.f_name,
-            "age": str(user.age),
-            "city_of_residence": user.city_of_residence
-        },
         "recommendations": {
             "similar_age_group": sec1,
             "co_visitation": sec2,
             "same_city": sec3
-        }
+        }}
     }
     return jsonify(result)
 
