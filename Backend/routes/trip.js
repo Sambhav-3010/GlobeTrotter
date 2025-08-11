@@ -16,7 +16,6 @@ router.post("/history", protect, async (req, res) => {
       duration_of_visit: trip.duration_of_visit,
       overall_budget: trip.overall_budget,
     })));
-    console.log("Trip added:", addTrip);
     const updateUser = await User.findByIdAndUpdate(addTrip.map(trip => trip.user_id), {
       $push: {
         placesVisited: addTrip.map(trip => trip.place_of_visit),
