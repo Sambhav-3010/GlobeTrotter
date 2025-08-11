@@ -9,16 +9,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useUser } from "../context/UserContext"
 
 export default function AuthPage() {
   const router = useRouter()
+  const { setUser } = useUser()
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [f_name, setF_name] = useState("")
   const [l_name, setL_name] = useState("")
-  const [username, setUsername] = useState("")
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
@@ -40,7 +41,6 @@ export default function AuthPage() {
     if (!isLogin) {
       if (!f_name) newErrors.f_name = "First name is required"
       if (!l_name) newErrors.l_name = "Last name is required"
-      if (!username) newErrors.username = "Username is required"
     }
 
     setErrors(newErrors)
@@ -59,7 +59,7 @@ export default function AuthPage() {
     try {
       let response
       if (isLogin) {
-        response = await fetch("/api/auth/login", {
+        response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -67,28 +67,29 @@ export default function AuthPage() {
           body: JSON.stringify({ email, password }),
         })
       } else {
-        response = await fetch("/api/auth/register", {
+        response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/register`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ f_name, l_name, username, email, password }),
+          body: JSON.stringify({ f_name, l_name, email, password }),
         })
       }
 
       const data = await response.json()
+      console.log("Response data:", data)
 
       if (response.ok) {
-        localStorage.setItem("token", data.data.token)
-        localStorage.setItem("user", JSON.stringify(data.data.user))
+        document.cookie = `token=${data.user.token}; path=/; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}`;
+        localStorage.setItem("user", JSON.stringify(data.user))
         toast.success(data.message)
         if (isLogin) {
           router.push("/dashboard")
         } else {
-          // For signup, redirect to onboarding with pre-filled data
-          localStorage.setItem("onboarding_f_name", data.data.user.f_name);
-          localStorage.setItem("onboarding_l_name", data.data.user.l_name);
-          localStorage.setItem("onboarding_email", data.data.user.email);
+          localStorage.setItem("f_name", data.user.f_name);
+          localStorage.setItem("l_name", data.user.l_name);
+          localStorage.setItem("email", data.user.email);
+          setUser(data.user);
           router.push("/onboarding")
         }
       } else {
@@ -204,22 +205,6 @@ export default function AuthPage() {
                       />
                     </div>
                     {errors.l_name && <p className="text-red-600 text-sm mt-1 font-medium">{errors.l_name}</p>}
-                  </div>
-                  <div>
-                    <Label htmlFor="username" className="text-black font-bold text-sm uppercase tracking-wide">
-                      Username
-                    </Label>
-                    <div className="relative mt-2">
-                      <Input
-                        id="username"
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        className="pl-4 h-14 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium"
-                        placeholder="Choose a username"
-                      />
-                    </div>
-                    {errors.username && <p className="text-red-600 text-sm mt-1 font-medium">{errors.username}</p>}
                   </div>
                 </>
               )}

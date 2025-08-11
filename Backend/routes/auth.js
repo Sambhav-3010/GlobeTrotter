@@ -16,29 +16,25 @@ const createToken = (userId) => {
 router.post('/register', async (req, res) => {
   try {
     if (req.user) {
-      // If user is already authenticated, return existing session token
       const token = createToken(req.user._id);
       return res.status(200).json({ message: 'Already authenticated', user: req.user, token });
     }
 
-    const { f_name, l_name, username, email, password, age, city, country, phoneNumber } = req.body;
+    const { f_name, l_name, email, password, age, city, country, phoneNumber, username } = req.body;
 
-    if (!f_name || !l_name || !username || !email || !password) {
-      return res.status(400).json({ message: 'f_name, l_name, username, email, and password are required' });
+    if (!f_name || !l_name || !email || !password) {
+      return res.status(400).json({ message: 'f_name, l_name, email, and password are required' });
     }
 
-    const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
+    const existingUserByEmail = await User.findOne({ email: email });
     if (existingUserByEmail) return res.status(400).json({ message: 'User with this email already exists' });
-
-    const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
-    if (existingUserByUsername) return res.status(400).json({ message: 'Username not available' });
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await User.create({
       f_name,
       l_name,
-      username: username.toLowerCase(),
+      username,
       email: email.toLowerCase(),
       password: hashedPassword,
       age,
@@ -57,7 +53,7 @@ router.post('/register', async (req, res) => {
 
     req.login(user, (err) => {
       if (err) console.error(err);
-      return res.status(201).json({ message: 'User registered', user: { id: user._id, f_name: user.f_name, l_name: user.l_name, username: user.username, email: user.email } });
+      return res.status(201).json({ message: 'User registered', user: { id: user._id, f_name: user.f_name, l_name: user.l_name, username: user.username, email: user.email, token } });
     });
 
   } catch (err) {
@@ -94,7 +90,7 @@ router.post('/login', async (req, res) => {
 
     req.login(user, (err) => {
       if (err) console.error(err);
-      return res.json({ message: 'Login successful', user: { id: user._id, email: user.email, username: user.username } });
+      return res.json({ message: 'Login successful', user: { id: user._id, email: user.email, username: user.username, token } });
     });
   } catch (err) {
     console.error(err);
@@ -191,11 +187,10 @@ const protect = (req, res, next) => {
   }
 };
 
-// Update user profile
 router.put('/users/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, age, city, phoneNumber, gender, placesVisited, profilePhoto } = req.body;
+    const { username, age, city, phoneNumber, gender } = req.body;
 
     if (req.user._id.toString() !== id) {
       return res.status(403).json({ message: 'Not authorized to update this user profile' });
@@ -207,21 +202,18 @@ router.put('/users/:id', protect, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if username is being changed and if it's already taken
     if (username && username !== user.username) {
-      const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
+      const existingUserByUsername = await User.findOne({ username: username });
       if (existingUserByUsername && existingUserByUsername._id.toString() !== id) {
         return res.status(400).json({ message: 'Username not available' });
       }
-      user.username = username.toLowerCase();
+      user.username = username;
     }
 
     user.age = age !== undefined ? age : user.age;
     user.city = city !== undefined ? city : user.city;
     user.phoneNumber = phoneNumber !== undefined ? phoneNumber : user.phoneNumber;
     user.gender = gender !== undefined ? gender : user.gender;
-    user.placesVisited = placesVisited !== undefined ? placesVisited : user.placesVisited;
-    user.profilePhoto = profilePhoto !== undefined ? profilePhoto : user.profilePhoto;
 
     const updatedUser = await user.save();
 

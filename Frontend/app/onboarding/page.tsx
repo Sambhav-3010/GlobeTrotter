@@ -63,16 +63,13 @@ export default function OnboardingPage() {
     gender: user?.gender || "",
     age: user?.age ? String(user.age) : "",
     city: user?.city || "",
-    placesVisited: user?.placesVisited || ([] as string[]),
-    profilePhoto: user?.profilePhoto || null,
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // Pre-fill data from localStorage after signup
-    if (!user) {
+    if (!localStorage.getItem("user")) {
       router.push("/auth")
     }
   }, [router])
@@ -117,7 +114,7 @@ export default function OnboardingPage() {
         return
       }
 
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/users/${userId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -129,8 +126,6 @@ export default function OnboardingPage() {
           city: formData.city,
           phoneNumber: formData.mobile,
           gender: formData.gender,
-          placesVisited: formData.placesVisited,
-          profilePhoto: formData.profilePhoto,
         }),
       });
 
@@ -237,6 +232,7 @@ export default function OnboardingPage() {
                   </Label>
                   <Input
                     id="f_name"
+                    disabled
                     type="text"
                     value={formData.f_name}
                     readOnly
@@ -250,6 +246,7 @@ export default function OnboardingPage() {
                   </Label>
                   <Input
                     id="l_name"
+                    disabled
                     type="text"
                     value={formData.l_name}
                     readOnly
@@ -265,6 +262,7 @@ export default function OnboardingPage() {
                 </Label>
                 <Input
                   id="email"
+                  disabled
                   type="email"
                   value={formData.email}
                   readOnly
@@ -361,20 +359,7 @@ export default function OnboardingPage() {
                 {errors.city && <p className="text-red-600 text-sm mt-1 font-medium">{errors.city}</p>}
               </div>
 
-              {/* Places Visited */}
-              <div>
-                <Label htmlFor="placesVisited" className="text-black font-bold text-sm uppercase tracking-wide">
-                  Places Visited (comma-separated)
-                </Label>
-                <Input
-                  id="placesVisited"
-                  type="text"
-                  value={formData.placesVisited.join(", ")}
-                  onChange={(e) => handleInputChange("placesVisited", e.target.value.split(",").map(s => s.trim()))}
-                  className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium"
-                  placeholder="e.g., Paris, Tokyo, New York"
-                />
-              </div>
+
 
               {errors.api && <p className="text-red-600 text-sm mt-1 font-medium text-center">{errors.api}</p>}
 

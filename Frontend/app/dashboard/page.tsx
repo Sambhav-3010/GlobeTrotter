@@ -44,29 +44,27 @@ export default function DashboardPage() {
   useEffect(() => {
     // Load user data from localStorage
     const user = localStorage.getItem("user")
-    const onboardingFname = localStorage.getItem("onboarding_f_name")
-    const onboardingLname = localStorage.getItem("onboarding_l_name")
-    const onboardingEmail = localStorage.getItem("onboarding_email")
+    const onboardingFname = localStorage.getItem("f_name")
+    const onboardingLname = localStorage.getItem("l_name")
+    const onboardingEmail = localStorage.getItem("email")
 
     if (user) {
       const userDataParsed = JSON.parse(user)
       setUserData(userDataParsed)
     } else if (onboardingFname && onboardingLname && onboardingEmail) {
-      // If coming from signup, but not yet completed onboarding
       router.push("/onboarding")
     } else {
-      // Redirect to auth if no user data
       router.push("/auth")
     }
   }, [router])
 
   const handleSignOut = () => {
-    localStorage.removeItem("token")
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
     localStorage.removeItem("user")
-    localStorage.removeItem("onboarding_f_name")
-    localStorage.removeItem("onboarding_l_name")
-    localStorage.removeItem("onboarding_email")
-    localStorage.removeItem("globetrotter-theme") // Assuming this is also stored in localStorage
+    localStorage.removeItem("f_name")
+    localStorage.removeItem("l_name")
+    localStorage.removeItem("email")
+    localStorage.removeItem("globetrotter-theme")
 
     toast({
       title: "Signed out successfully",
@@ -173,7 +171,7 @@ export default function DashboardPage() {
                       className="w-12 h-12 rounded-full border-2 border-black"
                     />
                   )}
-                  <p className="text-black font-bold text-lg">Welcome back, {userData.firstName || "Explorer"}! 🎉</p>
+                  <p className="text-black font-bold text-lg">Welcome back, {userData.f_name || "Explorer"}! 🎉</p>
                 </div>
               </motion.div>
             )}
