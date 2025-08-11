@@ -50,6 +50,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       f_name: userData?.f_name,
       l_name: userData?.l_name,
       username: userData?.username,
+      city: userData?.city,
     };
     if (userData) {
       localStorage.setItem('user', JSON.stringify(userSavedData));

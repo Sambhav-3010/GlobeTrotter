@@ -1,22 +1,30 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { ArrowLeft, Plane, Train, Plus, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { ArrowLeft, Plane, Train, Plus, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useRouter } from "next/navigation";
+import { getJson } from "serpapi";
+import { de } from "date-fns/locale";
 
 interface TravelItem {
-  id: string
-  type: "flight" | "train"
-  title: string
-  description: string
-  price: string
-  duration: string
-  departure: string
-  arrival: string
+  id: string;
+  type: "flight" | "train";
+  title: string;
+  description: string;
+  price: string;
+  duration: string;
+  departure: string;
+  arrival: string;
 }
 
 const sampleFlights = [
@@ -50,7 +58,7 @@ const sampleFlights = [
     departure: "6:45 AM",
     arrival: "8:15 AM",
   },
-]
+];
 
 const sampleTrains = [
   {
@@ -73,55 +81,85 @@ const sampleTrains = [
     departure: "10:15 PM",
     arrival: "10:30 AM+1",
   },
-]
+];
 
 export default function TravelPage() {
-  const router = useRouter()
-  const [selectedTravel, setSelectedTravel] = useState<TravelItem[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
-  const [travelType, setTravelType] = useState<"all" | "flight" | "train">("all")
+  const router = useRouter();
+  const [selectedTravel, setSelectedTravel] = useState<TravelItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [travelType, setTravelType] = useState<"all" | "flight" | "train">(
+    "all"
+  );
 
   useEffect(() => {
-    // Load saved travel selections
-    const saved = localStorage.getItem("globetrotter-travel-selections")
-    if (saved) {
-      setSelectedTravel(JSON.parse(saved))
-    }
-  }, [])
+    const fetchData = async () => {
+      const saved = JSON.parse(localStorage.getItem("globetrotter-trip-details") || "{}");
+      console.log(saved);
+      const response = await fetch("", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          departure_id: saved.outbound_id,
+          arrival_id: saved.return_id,
+          startDate: saved.outbound_date,
+          endDate: saved.return_date,
+          duration: 5,
+          totalSpent: 0,
+        }),
+      });
+    };
+    fetchData();
+  }, []);
 
   const handleAddTravel = (item: TravelItem) => {
-    const updated = [...selectedTravel, { ...item, id: `${item.id}-${Date.now()}` }]
-    setSelectedTravel(updated)
-    localStorage.setItem("globetrotter-travel-selections", JSON.stringify(updated))
+    const updated = [
+      ...selectedTravel,
+      { ...item, id: `${item.id}-${Date.now()}` },
+    ];
+    setSelectedTravel(updated);
+    localStorage.setItem(
+      "globetrotter-travel-selections",
+      JSON.stringify(updated)
+    );
 
     // Update progress
-    const progress = JSON.parse(localStorage.getItem("globetrotter-trip-progress") || "[]")
+    const progress = JSON.parse(
+      localStorage.getItem("globetrotter-trip-progress") || "[]"
+    );
     if (!progress.includes("travel")) {
-      progress.push("travel")
-      localStorage.setItem("globetrotter-trip-progress", JSON.stringify(progress))
+      progress.push("travel");
+      localStorage.setItem(
+        "globetrotter-trip-progress",
+        JSON.stringify(progress)
+      );
     }
-  }
+  };
 
   const handleRemoveTravel = (id: string) => {
-    const updated = selectedTravel.filter((item) => item.id !== id)
-    setSelectedTravel(updated)
-    localStorage.setItem("globetrotter-travel-selections", JSON.stringify(updated))
-  }
+    const updated = selectedTravel.filter((item) => item.id !== id);
+    setSelectedTravel(updated);
+    localStorage.setItem(
+      "globetrotter-travel-selections",
+      JSON.stringify(updated)
+    );
+  };
 
   const getFilteredResults = () => {
-    const allResults = [...sampleFlights, ...sampleTrains]
+    const allResults = [...sampleFlights, ...sampleTrains];
     return allResults.filter((item) => {
-      const matchesType = travelType === "all" || item.type === travelType
+      const matchesType = travelType === "all" || item.type === travelType;
       const matchesSearch =
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase())
-      return matchesType && matchesSearch
-    })
-  }
+        item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesType && matchesSearch;
+    });
+  };
 
   const handleContinue = () => {
-    router.push("/manual-itinerary-builder/hotels")
-  }
+    router.push("/manual-itinerary-builder/hotels");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
@@ -136,7 +174,9 @@ export default function TravelPage() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               BACK
             </Button>
-            <div className="text-white text-2xl font-bold">TRAVEL SELECTION</div>
+            <div className="text-white text-2xl font-bold">
+              TRAVEL SELECTION
+            </div>
           </div>
           <Button
             onClick={handleContinue}
@@ -168,7 +208,10 @@ export default function TravelPage() {
                     className="pl-10 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-bold"
                   />
                 </div>
-                <Select value={travelType} onValueChange={(value: any) => setTravelType(value)}>
+                <Select
+                  value={travelType}
+                  onValueChange={(value: any) => setTravelType(value)}
+                >
                   <SelectTrigger className="w-32 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-bold">
                     <SelectValue />
                   </SelectTrigger>
@@ -183,7 +226,10 @@ export default function TravelPage() {
               {/* Results */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {getFilteredResults().map((item) => (
-                  <div key={item.id} className="bg-gray-50 border-2 border-black p-4">
+                  <div
+                    key={item.id}
+                    className="bg-gray-50 border-2 border-black p-4"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -192,9 +238,13 @@ export default function TravelPage() {
                           ) : (
                             <Train className="w-5 h-5 text-green-500" />
                           )}
-                          <h4 className="font-black text-black uppercase">{item.title}</h4>
+                          <h4 className="font-black text-black uppercase">
+                            {item.title}
+                          </h4>
                         </div>
-                        <p className="text-sm text-black font-medium mb-2">{item.description}</p>
+                        <p className="text-sm text-black font-medium mb-2">
+                          {item.description}
+                        </p>
                         <div className="grid grid-cols-2 gap-2 text-xs text-black font-bold">
                           <span>Price: {item.price}</span>
                           <span>Duration: {item.duration}</span>
@@ -217,7 +267,9 @@ export default function TravelPage() {
 
           {/* Selected Travel */}
           <div className="bg-white border-4 border-black p-6">
-            <h3 className="text-lg font-black text-black mb-4 uppercase">Your Selected Travel</h3>
+            <h3 className="text-lg font-black text-black mb-4 uppercase">
+              Your Selected Travel
+            </h3>
 
             {selectedTravel.length > 0 ? (
               <div className="space-y-4">
@@ -238,8 +290,12 @@ export default function TravelPage() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-black text-black uppercase">{item.title}</h4>
-                          <p className="text-sm text-black font-medium mb-2">{item.description}</p>
+                          <h4 className="font-black text-black uppercase">
+                            {item.title}
+                          </h4>
+                          <p className="text-sm text-black font-medium mb-2">
+                            {item.description}
+                          </p>
                           <div className="grid grid-cols-2 gap-1 text-xs text-black font-bold">
                             <span>
                               {item.departure} → {item.arrival}
@@ -263,11 +319,18 @@ export default function TravelPage() {
 
                 <div className="pt-4 border-t-2 border-black">
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-bold">TOTAL TRAVEL COST:</span>
+                    <span className="text-black font-bold">
+                      TOTAL TRAVEL COST:
+                    </span>
                     <span className="text-xl font-black text-black">
                       ₹
                       {selectedTravel
-                        .reduce((sum, item) => sum + Number.parseInt(item.price.replace(/[₹,]/g, "")), 0)
+                        .reduce(
+                          (sum, item) =>
+                            sum +
+                            Number.parseInt(item.price.replace(/[₹,]/g, "")),
+                          0
+                        )
                         .toLocaleString()}
                     </span>
                   </div>
@@ -276,12 +339,14 @@ export default function TravelPage() {
             ) : (
               <div className="text-center py-8">
                 <Plane className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-black font-bold uppercase">No travel selected yet. Choose from available options.</p>
+                <p className="text-black font-bold uppercase">
+                  No travel selected yet. Choose from available options.
+                </p>
               </div>
             )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

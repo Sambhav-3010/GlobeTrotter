@@ -8,6 +8,7 @@ const passport = require("passport");
 const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/auth");
 const tripRoutes = require("./routes/trip");
+const flightsRouter = require("./routes/serp");
 const cors = require("cors");
 
 const app = express();
@@ -53,6 +54,7 @@ app.get("/", (req, res) => {
         <button onclick="window.location.href='${process.env.BACKEND_URL}/auth/google'">Login with Google</button></body></html>`);
 });
 app.use("/auth", authRoutes);
+app.use("/api", flightsRouter);
 app.use("/trip", tripRoutes);
 
 const PORT = process.env.PORT || 5000;
