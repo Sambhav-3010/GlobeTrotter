@@ -1,5 +1,0 @@
-Flask
-pandas
-pymongo
-python-dotenv
-bson
