@@ -6,7 +6,6 @@ import { Search, MapPin, Globe, ArrowRight, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
-import { id } from "date-fns/locale";
 
 const indianCities = [
   "Mumbai",
@@ -121,13 +120,21 @@ const countries = [
   "Finland",
 ];
 
+type TripDetails = {
+  place_of_visit: string;
+  start_date: string;
+  end_date: string;
+  duration_of_visit: number;
+  overall_budget: number;
+};
+
 export default function TravelHistoryPage() {
   const router = useRouter();
-  const [selectedCities, setSelectedCities] = useState<string[]>([]);
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [selectedTrips, setSelectedTrips] = useState<TripDetails[]>([]);
   const [citySearch, setCitySearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
 
+  // redirect if no profile
   useEffect(() => {
     const profile = localStorage.getItem("user");
     if (!profile) {
@@ -135,52 +142,81 @@ export default function TravelHistoryPage() {
     }
   }, [router]);
 
-  const filteredCities = useMemo(() => {
-    return indianCities.filter((city) =>
-      city.toLowerCase().includes(citySearch.toLowerCase())
-    );
-  }, [citySearch]);
+  const filteredCities = useMemo(
+    () =>
+      indianCities.filter((city) =>
+        city.toLowerCase().includes(citySearch.toLowerCase())
+      ),
+    [citySearch]
+  );
 
-  const filteredCountries = useMemo(() => {
-    return countries.filter((country) =>
-      country.toLowerCase().includes(countrySearch.toLowerCase())
-    );
-  }, [countrySearch]);
+  const filteredCountries = useMemo(
+    () =>
+      countries.filter((country) =>
+        country.toLowerCase().includes(countrySearch.toLowerCase())
+      ),
+    [countrySearch]
+  );
 
-  const totalTrips = selectedCities.length + selectedCountries.length;
+  const totalTrips = selectedTrips.length;
 
-  const toggleCity = (city: string) => {
-    setSelectedCities((prev) =>
-      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
+  // Toggle selection
+  const togglePlace = (place: string) => {
+    setSelectedTrips((prev) => {
+      const existing = prev.find((t) => t.place_of_visit === place);
+      if (existing) {
+        return prev.filter((t) => t.place_of_visit !== place);
+      } else {
+        return [
+          ...prev,
+          {
+            place_of_visit: place,
+            start_date: "",
+            end_date: "",
+            duration_of_visit: 0,
+            overall_budget: 0,
+          },
+        ];
+      }
+    });
+  };
+
+  // Update details for a selected place
+  const updateTripDetails = (
+    place: string,
+    field: keyof TripDetails,
+    value: any
+  ) => {
+    setSelectedTrips((prev) =>
+      prev.map((t) =>
+        t.place_of_visit === place
+          ? {
+              ...t,
+              [field]:
+                field === "overall_budget" || field === "duration_of_visit"
+                  ? Number(value)
+                  : value,
+            }
+          : t
+      )
     );
   };
 
-  const toggleCountry = (country: string) => {
-    setSelectedCountries((prev) =>
-      prev.includes(country)
-        ? prev.filter((c) => c !== country)
-        : [...prev, country]
-    );
-  };
-
-  const removeCity = (city: string) => {
-    setSelectedCities((prev) => prev.filter((c) => c !== city));
-  };
-
-  const removeCountry = (country: string) => {
-    setSelectedCountries((prev) => prev.filter((c) => c !== country));
+  const removePlace = (place: string) => {
+    setSelectedTrips((prev) => prev.filter((t) => t.place_of_visit !== place));
   };
 
   const handleContinue = async () => {
-    const combinedPlaces = [...selectedCities, ...selectedCountries];
-    const totalTrips = combinedPlaces.length;
     const travelData = {
-      placesVisited: combinedPlaces,
-      recentlyVisited: combinedPlaces[combinedPlaces.length - 1] || "",
-      noOfTrips: totalTrips,
+      tripDetails: selectedTrips.map((trip) => ({
+        userId: JSON.parse(localStorage.getItem("user") || '{}').id,
+        place_of_visit: trip.place_of_visit,
+        start_date: trip.start_date,
+        end_date: trip.end_date,
+        duration_of_visit: trip.duration_of_visit,
+        overall_budget: trip.overall_budget,
+      })),
     };
-
-    console.log("Travel Data being sent:", travelData);
 
     try {
       const response = await fetch(
@@ -203,7 +239,6 @@ export default function TravelHistoryPage() {
       }
 
       const result = await response.json();
-      console.log("Travel history saved successfully:", result);
       router.push("/dashboard");
     } catch (err) {
       console.error("Network error sending travel history:", err);
@@ -239,7 +274,7 @@ export default function TravelHistoryPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
-      {/* Header */}
+      {/* HEADER */}
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -252,12 +287,12 @@ export default function TravelHistoryPage() {
             onClick={() => router.push("/onboarding")}
             className="bg-white hover:bg-gray-100 text-black font-bold border-2 border-white"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            BACK
+            <ArrowLeft className="w-4 h-4 mr-2" /> BACK
           </Button>
         </div>
       </div>
 
+      {/* MAIN */}
       <div className="flex items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -265,13 +300,13 @@ export default function TravelHistoryPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-4xl"
         >
-          {/* Header Message */}
+          {/* Header */}
           <div className="bg-white border-4 border-black p-6 mb-8 text-center">
             <h2 className="text-3xl font-black text-black mb-3 uppercase">
-              SHARE YOUR TRAVEL HISTORY
+              Share Your Travel History
             </h2>
             <p className="text-black font-medium mb-4">
-              Tell us about the amazing places you've already explored
+              Tell us about the amazing places you've explored
             </p>
             <div className="inline-flex items-center gap-2 bg-yellow-400 border-2 border-black px-4 py-2">
               <Globe className="w-5 h-5 text-black" />
@@ -281,177 +316,190 @@ export default function TravelHistoryPage() {
             </div>
           </div>
 
-          <div className="bg-white border-4 border-black p-8">
-            {/* Selected Items Display */}
-            {(selectedCities.length > 0 || selectedCountries.length > 0) && (
-              <div className="mb-8 p-4 bg-gray-100 border-2 border-black">
-                <h3 className="text-lg font-black text-black mb-4 uppercase">
-                  Your Selected Places
+          {/* City & Country Selection */}
+          <div className="space-y-8">
+            {/* Cities */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <MapPin className="w-6 h-6 text-black" />
+                <h3 className="text-xl font-black text-black uppercase">
+                  Cities in India
                 </h3>
-
-                {selectedCities.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="text-sm font-bold text-black mb-2 uppercase">
-                      Cities in India ({selectedCities.length})
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCities.map((city) => (
-                        <div
-                          key={city}
-                          className="flex items-center gap-2 bg-yellow-400 border-2 border-black text-black px-3 py-1 text-sm font-bold uppercase"
-                        >
-                          <span>{city}</span>
-                          <button
-                            onClick={() => removeCity(city)}
-                            className="hover:bg-red-500 hover:text-white border border-black w-4 h-4 flex items-center justify-center text-xs"
-                          >
-                            <X className="w-2 h-2" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedCountries.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-bold text-black mb-2 uppercase">
-                      Countries ({selectedCountries.length})
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCountries.map((country) => (
-                        <div
-                          key={country}
-                          className="flex items-center gap-2 bg-red-500 border-2 border-black text-white px-3 py-1 text-sm font-bold uppercase"
-                        >
-                          <span>{country}</span>
-                          <button
-                            onClick={() => removeCountry(country)}
-                            className="hover:bg-yellow-400 hover:text-black border border-white w-4 h-4 flex items-center justify-center text-xs"
-                          >
-                            <X className="w-2 h-2" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-            )}
-
-            <div className="space-y-8">
-              {/* Indian Cities */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <MapPin className="w-6 h-6 text-black" />
-                  <h3 className="text-xl font-black text-black uppercase">
-                    Cities in India
-                  </h3>
-                  <div className="bg-yellow-400 border-2 border-black px-3 py-1">
-                    <span className="text-black font-bold text-sm">
-                      {selectedCities.length} SELECTED
-                    </span>
-                  </div>
-                </div>
-
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-5 h-5" />
-                  <Input
-                    type="text"
-                    placeholder="SEARCH INDIAN CITIES..."
-                    value={citySearch}
-                    onChange={(e) => setCitySearch(e.target.value)}
-                    className="pl-10 h-12 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-bold uppercase"
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-4 bg-gray-50 border-2 border-black">
-                  {filteredCities.map((city) => (
-                    <motion.button
-                      key={city}
-                      onClick={() => toggleCity(city)}
-                      className={`px-4 py-2 text-sm font-bold transition-all duration-200 border-2 border-black uppercase ${
-                        selectedCities.includes(city)
-                          ? "bg-yellow-400 text-black scale-105"
-                          : "bg-white text-black hover:bg-gray-100"
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {city}
-                    </motion.button>
-                  ))}
-                </div>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-5 h-5" />
+                <Input
+                  placeholder="Search Indian Cities..."
+                  value={citySearch}
+                  onChange={(e) => setCitySearch(e.target.value)}
+                  className="pl-10 h-12 border-2 border-black"
+                />
               </div>
-
-              {/* Countries */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <Globe className="w-6 h-6 text-black" />
-                  <h3 className="text-xl font-black text-black uppercase">
-                    Countries Visited
-                  </h3>
-                  <div className="bg-red-500 border-2 border-black px-3 py-1">
-                    <span className="text-white font-bold text-sm">
-                      {selectedCountries.length} SELECTED
-                    </span>
-                  </div>
-                </div>
-
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-5 h-5" />
-                  <Input
-                    type="text"
-                    placeholder="SEARCH COUNTRIES..."
-                    value={countrySearch}
-                    onChange={(e) => setCountrySearch(e.target.value)}
-                    className="pl-10 h-12 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-bold placeholder:text-gray-500 placeholder:font-bold uppercase"
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-4 bg-gray-50 border-2 border-black">
-                  {filteredCountries.map((country) => (
-                    <motion.button
-                      key={country}
-                      onClick={() => toggleCountry(country)}
-                      className={`px-4 py-2 text-sm font-bold transition-all duration-200 border-2 border-black uppercase ${
-                        selectedCountries.includes(country)
-                          ? "bg-red-500 text-white scale-105"
-                          : "bg-white text-black hover:bg-gray-100"
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {country}
-                    </motion.button>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-2 bg-gray-50 border-2 border-black p-4">
+                {filteredCities.map((city) => (
+                  <motion.button
+                    key={city}
+                    onClick={() => togglePlace(city)}
+                    className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
+                      selectedTrips.some((t) => t.place_of_visit === city)
+                        ? "bg-yellow-400"
+                        : "bg-white"
+                    }`}
+                  >
+                    {city}
+                  </motion.button>
+                ))}
               </div>
             </div>
 
-            {/* Navigation Buttons */}
-            <div className="flex gap-4 pt-8">
-              <Button
-                onClick={() => router.push("/onboarding")}
-                className="flex-1 h-12 bg-white hover:bg-gray-50 text-black font-bold border-2 border-black"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                BACK
-              </Button>
-              <Button
-                onClick={handleSkip}
-                className="h-12 px-6 bg-yellow-400 hover:bg-yellow-500 text-black font-bold border-2 border-black"
-              >
-                SKIP
-              </Button>
-              <Button
-                onClick={handleContinue}
-                className="flex-1 h-12 bg-red-500 hover:bg-red-600 text-white font-bold border-2 border-black"
-              >
-                CONTINUE
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+            {/* Countries */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <Globe className="w-6 h-6 text-black" />
+                <h3 className="text-xl font-black text-black uppercase">
+                  Countries Visited
+                </h3>
+              </div>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-5 h-5" />
+                <Input
+                  placeholder="Search Countries..."
+                  value={countrySearch}
+                  onChange={(e) => setCountrySearch(e.target.value)}
+                  className="pl-10 h-12 border-2 border-black"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 bg-gray-50 border-2 border-black p-4">
+                {filteredCountries.map((country) => (
+                  <motion.button
+                    key={country}
+                    onClick={() => togglePlace(country)}
+                    className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
+                      selectedTrips.some((t) => t.place_of_visit === country)
+                        ? "bg-red-500 text-white"
+                        : "bg-white text-black"
+                    }`}
+                  >
+                    {country}
+                  </motion.button>
+                ))}
+              </div>
             </div>
+          </div>
+
+          {/* Selected Places Details */}
+          {selectedTrips.length > 0 && (
+            <div className="mb-8 p-4 bg-gray-100 border-2 border-black">
+              <h3 className="text-lg font-black text-black mb-4 uppercase">
+                Your Selected Trips
+              </h3>
+              {selectedTrips.map((trip, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 border-2 border-black bg-white mb-4"
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-bold uppercase">
+                      {trip.place_of_visit}
+                    </h4>
+                    <button
+                      onClick={() => removePlace(trip.place_of_visit)}
+                      className="text-red-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="font-bold">Start Date</label>
+                      <Input
+                        type="date"
+                        value={trip.start_date}
+                        onChange={(e) =>
+                          updateTripDetails(
+                            trip.place_of_visit,
+                            "start_date",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold">End Date</label>
+                      <Input
+                        type="date"
+                        value={trip.end_date}
+                        onChange={(e) => {
+                          updateTripDetails(
+                            trip.place_of_visit,
+                            "end_date",
+                            e.target.value
+                          );
+                          if (trip.start_date && e.target.value) {
+                            const duration = Math.ceil(
+                              (new Date(e.target.value).getTime() -
+                                new Date(trip.start_date).getTime()) /
+                                (1000 * 60 * 60 * 24)
+                            );
+                            updateTripDetails(
+                              trip.place_of_visit,
+                              "duration_of_visit",
+                              duration
+                            );
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold">Duration (Days)</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={trip.duration_of_visit}
+                        onChange={(e) =>
+                          updateTripDetails(
+                            trip.place_of_visit,
+                            "duration_of_visit",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold">Overall Budget</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={trip.overall_budget}
+                        onChange={(e) =>
+                          updateTripDetails(
+                            trip.place_of_visit,
+                            "overall_budget",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* NAV Buttons */}
+          <div className="flex gap-4 pt-8">
+            <Button
+              onClick={() => router.push("/onboarding")}
+              className="flex-1 h-12 bg-white border-2 border-black text-black"
+            >
+              <ArrowLeft className="ml-2" /> Back
+            </Button>
+            <Button
+              onClick={handleContinue}
+              className="flex-1 h-12 bg-red-500 text-white border-2 border-black"
+            >
+              Continue <ArrowRight className="ml-2" />
+            </Button>
           </div>
         </motion.div>
       </div>

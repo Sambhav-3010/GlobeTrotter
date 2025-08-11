@@ -3,7 +3,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: string;
+  _id: string;
   email: string;
   f_name?: string;
   l_name?: string;
@@ -45,7 +45,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const setUser = (userData: User | null) => {
     setUserState(userData);
     const userSavedData = {
-      id: userData?.id,
+      _id: userData?._id,
       email: userData?.email,
       f_name: userData?.f_name,
       l_name: userData?.l_name,
