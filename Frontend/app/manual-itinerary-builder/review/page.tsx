@@ -42,21 +42,36 @@ export default function ReviewPage() {
 
   useEffect(() => {
     const savedDetails = localStorage.getItem("globetrotter-trip-details")
-    const savedSelections = localStorage.getItem("globetrotter-trip-selections")
+    const travelSelections = localStorage.getItem("globetrotter-travel-selections")
+    const hotelSelections = localStorage.getItem("globetrotter-hotel-selections")
+    const activitySelections = localStorage.getItem("globetrotter-activity-selections")
+    const diningSelections = localStorage.getItem("globetrotter-dining-selections")
 
     if (savedDetails) {
       setTripDetails(JSON.parse(savedDetails))
     }
-    if (savedSelections) {
-      setSelections(JSON.parse(savedSelections))
+
+    // Merge all categories into TripSelections object
+    let loadedSelections: TripSelections = {
+      travel: travelSelections ? JSON.parse(travelSelections) : [],
+      hotels: hotelSelections ? JSON.parse(hotelSelections) : [],
+      activities: activitySelections ? JSON.parse(activitySelections) : [],
+      dining: diningSelections ? JSON.parse(diningSelections) : [],
     }
+
+    setSelections(loadedSelections)
+
+    // Debug: See what's in localStorage
+    console.log("Loaded trip details:", savedDetails ? JSON.parse(savedDetails) : null)
+    console.log("Loaded selections:", loadedSelections)
   }, [])
 
   const calculateTotal = () => {
     let total = 0
     Object.values(selections).forEach((category) => {
       category.forEach((item: { price: number }) => {
-        total += item.price
+        total += Number(item.price)
+        console.log(`Adding ${item.price} from to total. Current total: ${total}`)
       })
     })
     return total
@@ -67,7 +82,6 @@ export default function ReviewPage() {
   }
 
   const handleConfirmTrip = () => {
-    // Here you would typically save the final itinerary or proceed to booking
     alert("Trip confirmed! This would proceed to booking or save the final itinerary.")
   }
 
@@ -80,34 +94,10 @@ export default function ReviewPage() {
   const isOverBudget = total > budget
 
   const sections = [
-    {
-      id: "travel",
-      title: "TRAVEL",
-      icon: Plane,
-      color: "bg-blue-500",
-      items: selections.travel,
-    },
-    {
-      id: "hotels",
-      title: "HOTELS",
-      icon: Hotel,
-      color: "bg-green-500",
-      items: selections.hotels,
-    },
-    {
-      id: "activities",
-      title: "ACTIVITIES",
-      icon: Camera,
-      color: "bg-purple-500",
-      items: selections.activities,
-    },
-    {
-      id: "dining",
-      title: "DINING",
-      icon: Utensils,
-      color: "bg-orange-500",
-      items: selections.dining,
-    },
+    { id: "travel", title: "TRAVEL", icon: Plane, color: "bg-blue-500", items: selections.travel },
+    { id: "hotels", title: "HOTELS", icon: Hotel, color: "bg-green-500", items: selections.hotels },
+    { id: "activities", title: "ACTIVITIES", icon: Camera, color: "bg-purple-500", items: selections.activities },
+    { id: "dining", title: "DINING", icon: Utensils, color: "bg-orange-500", items: selections.dining },
   ]
 
   return (
@@ -130,13 +120,8 @@ export default function ReviewPage() {
 
       <div className="max-w-4xl mx-auto p-8">
         {/* Trip Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white border-4 border-black p-6 mb-8"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white border-4 border-black p-6 mb-8">
           <h1 className="text-3xl font-black text-black mb-6 uppercase text-center">Your Complete Itinerary</h1>
-
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -159,17 +144,16 @@ export default function ReviewPage() {
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-red-500" />
                 <span className={`font-bold ${isOverBudget ? "text-red-500" : "text-green-600"}`}>
-                  TOTAL COST: ${total.toFixed(2)}
+                  TOTAL COST: ${total}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Budget Alert */}
           {isOverBudget && (
             <div className="mt-4 bg-red-100 border-2 border-red-500 p-4">
               <p className="text-red-700 font-bold text-center">
-                ⚠️ WARNING: Your selections exceed your budget by ${(total - budget).toFixed(2)}
+                ⚠️ WARNING: Your selections exceed your budget by ${(total - budget)}
               </p>
             </div>
           )}
@@ -178,7 +162,7 @@ export default function ReviewPage() {
         {/* Itinerary Sections */}
         {sections.map((section, index) => {
           const Icon = section.icon
-          const sectionTotal = section.items.reduce((sum, item) => sum + item.price, 0)
+          const sectionTotal = section.items.reduce((sum, item) => sum + Number(item.price), 0)
 
           return (
             <motion.div
@@ -193,7 +177,7 @@ export default function ReviewPage() {
                   <div className="flex items-center gap-3">
                     <Icon className="w-6 h-6 text-white" />
                     <h3 className="text-xl font-black text-white">{section.title}</h3>
-                    <span className="text-white font-bold">(${sectionTotal.toFixed(2)})</span>
+                    <span className="text-white font-bold">(${sectionTotal})</span>
                   </div>
                   <Button
                     onClick={() => handleEditSection(section.id)}
@@ -229,16 +213,11 @@ export default function ReviewPage() {
         })}
 
         {/* Final Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white border-4 border-black p-6"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="bg-white border-4 border-black p-6">
           <div className="text-center space-y-4">
             <div className="text-2xl font-black text-black">
               TOTAL TRIP COST:{" "}
-              <span className={isOverBudget ? "text-red-500" : "text-green-600"}>${total.toFixed(2)}</span>
+              <span className={isOverBudget ? "text-red-500" : "text-green-600"}>${total}</span>
             </div>
 
             <div className="flex gap-4 justify-center">

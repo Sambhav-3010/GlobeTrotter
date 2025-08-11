@@ -24,7 +24,7 @@ const sampleRestaurants = [
     id: "d1",
     title: "Thalassa",
     description: "Greek restaurant with stunning sea views and authentic Mediterranean cuisine",
-    price: "₹2,000 for 2",
+    price: "200",
     cuisine: "Greek",
     rating: "4.8",
     location: "Vagator Beach",
@@ -34,7 +34,7 @@ const sampleRestaurants = [
     id: "d2",
     title: "Fisherman's Wharf",
     description: "Popular seafood restaurant with Goan and Continental dishes",
-    price: "₹1,500 for 2",
+    price: "150",
     cuisine: "Seafood",
     rating: "4.6",
     location: "Cavelossim",
@@ -44,7 +44,7 @@ const sampleRestaurants = [
     id: "d3",
     title: "Gunpowder",
     description: "Authentic South Indian cuisine in a cozy garden setting",
-    price: "₹1,200 for 2",
+    price: "120",
     cuisine: "South Indian",
     rating: "4.7",
     location: "Assagao",
@@ -54,7 +54,7 @@ const sampleRestaurants = [
     id: "d4",
     title: "La Plage",
     description: "French beachside restaurant with romantic ambiance",
-    price: "₹2,500 for 2",
+    price: "250",
     cuisine: "French",
     rating: "4.9",
     location: "Ashwem Beach",
@@ -64,7 +64,7 @@ const sampleRestaurants = [
     id: "d5",
     title: "Vinayak Family Restaurant",
     description: "Traditional Goan home-style cooking",
-    price: "₹800 for 2",
+    price: "800",
     cuisine: "Goan",
     rating: "4.5",
     location: "Panaji",
@@ -74,7 +74,7 @@ const sampleRestaurants = [
     id: "d6",
     title: "Sublime",
     description: "Fine dining with innovative fusion cuisine",
-    price: "₹3,000 for 2",
+    price: "300",
     cuisine: "Fusion",
     rating: "4.8",
     location: "Morjim",
@@ -135,7 +135,7 @@ export default function DiningPage() {
   }
 
   const handleFinish = () => {
-    router.push("/manual-itinerary-builder")
+    router.push("/manual-itinerary-builder/review")
   }
 
   return (

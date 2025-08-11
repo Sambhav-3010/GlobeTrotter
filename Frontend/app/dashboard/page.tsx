@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
             <div className="bg-white border-4 border-black p-6">
               <Button
-                onClick={() => router.push("/manual-itinerary-builder")}
+                onClick={() => router.push("/manual-itinerary-builder/setup")}
                 className="w-full bg-red-500 hover:bg-red-600 text-white font-bold text-lg h-16 border-2 border-black"
               >
                 <MapPin className="w-6 h-6 mr-3" />

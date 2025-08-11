@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { ArrowLeft, Plane, Hotel, Camera, Utensils, ArrowRight, DollarSign } from "lucide-react"
+import { ArrowLeft, Plane, Hotel, Camera, Utensils, ArrowRight, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
 interface TripDetails {
-  destination: string
   budget: string
+  tripType: string
+  destination: string
   startDate: string
   endDate: string
-  duration: number
-  totalSpent: number
 }
 
 const steps = [
@@ -62,16 +61,11 @@ export default function ManualItineraryBuilderPage() {
 
     if (savedDetails) {
       setTripDetails(JSON.parse(savedDetails))
-    } else {
-      // Redirect to setup if no trip details
-      router.push("/manual-itinerary-builder/setup")
-      return
     }
-
     if (savedProgress) {
       setCompletedSteps(JSON.parse(savedProgress))
     }
-  }, [router])
+  }, [])
 
   const handleStepClick = (route: string) => {
     router.push(route)
@@ -80,30 +74,6 @@ export default function ManualItineraryBuilderPage() {
   const handleBack = () => {
     router.push("/dashboard")
   }
-
-  const getBudgetStatus = () => {
-    if (!tripDetails) return { color: "text-gray-500", message: "Loading..." }
-
-    const budget = Number.parseFloat(tripDetails.budget)
-    const spent = tripDetails.totalSpent || 0
-    const remaining = budget - spent
-    const percentage = (spent / budget) * 100
-
-    if (percentage >= 100) {
-      return { color: "text-red-500", message: "BUDGET EXCEEDED!" }
-    } else if (percentage >= 80) {
-      return { color: "text-orange-500", message: "BUDGET WARNING" }
-    } else {
-      return { color: "text-green-500", message: "WITHIN BUDGET" }
-    }
-  }
-
-  if (!tripDetails) {
-    return <div>Loading...</div>
-  }
-
-  const budgetStatus = getBudgetStatus()
-  const remainingBudget = Number.parseFloat(tripDetails.budget) - (tripDetails.totalSpent || 0)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
@@ -125,73 +95,41 @@ export default function ManualItineraryBuilderPage() {
 
       <div className="max-w-4xl mx-auto p-8">
         {/* Trip Overview */}
+        {tripDetails && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border-4 border-black p-6 mb-8"
+          >
+            <h2 className="text-2xl font-black text-black mb-4 uppercase">Your Trip Details</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-black font-bold">DESTINATION: {tripDetails.destination}</p>
+                <p className="text-black font-bold">BUDGET: {tripDetails.budget}</p>
+              </div>
+              <div>
+                <p className="text-black font-bold">TYPE: {tripDetails.tripType}</p>
+                <p className="text-black font-bold">
+                  DATES: {tripDetails.startDate} - {tripDetails.endDate}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Welcome Message */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white border-4 border-black p-6 mb-8"
         >
-          <h2 className="text-2xl font-black text-black mb-4 uppercase">Your Trip Details</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-black font-bold">DESTINATION: {tripDetails.destination}</p>
-              <p className="text-black font-bold">DURATION: {tripDetails.duration} DAYS</p>
-            </div>
-            <div>
-              <p className="text-black font-bold">
-                DATES: {tripDetails.startDate} - {tripDetails.endDate}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Budget Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white border-4 border-black p-6 mb-8"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-2xl font-black text-black uppercase flex items-center gap-2">
-              <DollarSign className="w-6 h-6" />
-              Budget Tracker
-            </h3>
-            <span className={`font-bold text-lg ${budgetStatus.color}`}>{budgetStatus.message}</span>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-black font-bold text-lg">TOTAL BUDGET</p>
-              <p className="text-2xl font-black text-green-600">${tripDetails.budget}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-black font-bold text-lg">SPENT</p>
-              <p className="text-2xl font-black text-red-500">${tripDetails.totalSpent || 0}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-black font-bold text-lg">REMAINING</p>
-              <p className={`text-2xl font-black ${remainingBudget >= 0 ? "text-green-600" : "text-red-500"}`}>
-                ${remainingBudget.toFixed(2)}
-              </p>
-            </div>
-          </div>
-
-          {/* Budget Progress Bar */}
-          <div className="mt-4">
-            <div className="bg-gray-200 border-2 border-black h-4">
-              <div
-                className={`h-full ${
-                  (tripDetails.totalSpent || 0) / Number.parseFloat(tripDetails.budget) >= 1
-                    ? "bg-red-500"
-                    : (tripDetails.totalSpent || 0) / Number.parseFloat(tripDetails.budget) >= 0.8
-                      ? "bg-orange-500"
-                      : "bg-green-500"
-                }`}
-                style={{
-                  width: `${Math.min(((tripDetails.totalSpent || 0) / Number.parseFloat(tripDetails.budget)) * 100, 100)}%`,
-                }}
-              />
-            </div>
+          <div className="text-center">
+            <MapPin className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-4xl font-black text-black mb-4 uppercase">Build Your Perfect Trip</h1>
+            <p className="text-black font-medium text-lg">
+              Create your custom itinerary step by step. Choose your travel, accommodations, activities, and dining
+              options.
+            </p>
           </div>
         </motion.div>
 
