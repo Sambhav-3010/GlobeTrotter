@@ -2,34 +2,30 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const tripSchema = new Schema({
-    userId: {
+    user_id: {
         type: Schema.Types.ObjectId,
         ref: 'User',
         required: true
     },
-    placeVisited: {
+    place_of_visit: {
         type: String,
         required: true,
         trim: true
     },
-    numberOfDays: {
+    duration_of_visit: {
         type: Number,
         required: true,
         min: 1
     },
-    date: {
-        type: Date,
-        default: Date.now
-    },
-    startDate: {
+    start_date: {
         type: Date,
         required: true
     },
-    endDate: {
+    end_date: {
         type: Date,
         required: true
     },
-    overallBudget: {
+    overall_budget: {
         type: Number,
         required: true,
         min: 0

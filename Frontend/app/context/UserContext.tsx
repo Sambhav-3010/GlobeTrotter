@@ -44,8 +44,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const setUser = (userData: User | null) => {
     setUserState(userData);
+    const userSavedData = {
+      id: userData?.id,
+      email: userData?.email,
+      f_name: userData?.f_name,
+      l_name: userData?.l_name,
+      username: userData?.username,
+    };
     if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(userSavedData));
     } else {
       localStorage.removeItem('user');
     }

@@ -133,7 +133,7 @@ export default function OnboardingPage() {
 
       if (response.ok) {
         setUser(data.user)
-        router.push("/dashboard")
+        router.push("/travel-history")
       } else {
         setErrors({ api: data.message || "Failed to update profile." })
       }

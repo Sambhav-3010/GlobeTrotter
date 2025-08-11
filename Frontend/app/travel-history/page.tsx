@@ -1,11 +1,12 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Search, MapPin, Globe, ArrowRight, ArrowLeft, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useRouter } from "next/navigation"
+import { useState, useMemo, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Search, MapPin, Globe, ArrowRight, ArrowLeft, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
+import { id } from "date-fns/locale";
 
 const indianCities = [
   "Mumbai",
@@ -21,7 +22,6 @@ const indianCities = [
   "Lucknow",
   "Kanpur",
   "Nagpur",
-  "Indore",
   "Goa",
   "Kochi",
   "Thiruvananthapuram",
@@ -66,7 +66,7 @@ const indianCities = [
   "Aizawl",
   "Kohima",
   "Itanagar",
-]
+];
 
 const countries = [
   "Thailand",
@@ -119,67 +119,123 @@ const countries = [
   "Sweden",
   "Denmark",
   "Finland",
-]
+];
 
 export default function TravelHistoryPage() {
-  const router = useRouter()
-  const [selectedCities, setSelectedCities] = useState<string[]>([])
-  const [selectedCountries, setSelectedCountries] = useState<string[]>([])
-  const [citySearch, setCitySearch] = useState("")
-  const [countrySearch, setCountrySearch] = useState("")
+  const router = useRouter();
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [citySearch, setCitySearch] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
 
   useEffect(() => {
-    // Check if user has profile data
-    const profile = localStorage.getItem("globetrotter-profile")
+    const profile = localStorage.getItem("user");
     if (!profile) {
-      router.push("/onboarding")
+      router.push("/onboarding");
     }
-  }, [router])
+  }, [router]);
 
   const filteredCities = useMemo(() => {
-    return indianCities.filter((city) => city.toLowerCase().includes(citySearch.toLowerCase()))
-  }, [citySearch])
+    return indianCities.filter((city) =>
+      city.toLowerCase().includes(citySearch.toLowerCase())
+    );
+  }, [citySearch]);
 
   const filteredCountries = useMemo(() => {
-    return countries.filter((country) => country.toLowerCase().includes(countrySearch.toLowerCase()))
-  }, [countrySearch])
+    return countries.filter((country) =>
+      country.toLowerCase().includes(countrySearch.toLowerCase())
+    );
+  }, [countrySearch]);
 
-  const totalTrips = selectedCities.length + selectedCountries.length
+  const totalTrips = selectedCities.length + selectedCountries.length;
 
   const toggleCity = (city: string) => {
-    setSelectedCities((prev) => (prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]))
-  }
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
+    );
+  };
 
   const toggleCountry = (country: string) => {
-    setSelectedCountries((prev) => (prev.includes(country) ? prev.filter((c) => c !== country) : [...prev, country]))
-  }
+    setSelectedCountries((prev) =>
+      prev.includes(country)
+        ? prev.filter((c) => c !== country)
+        : [...prev, country]
+    );
+  };
 
   const removeCity = (city: string) => {
-    setSelectedCities((prev) => prev.filter((c) => c !== city))
-  }
+    setSelectedCities((prev) => prev.filter((c) => c !== city));
+  };
 
   const removeCountry = (country: string) => {
-    setSelectedCountries((prev) => prev.filter((c) => c !== country))
-  }
+    setSelectedCountries((prev) => prev.filter((c) => c !== country));
+  };
 
-  const handleContinue = () => {
-    // Save travel history
+  const handleContinue = async () => {
+    const combinedPlaces = [...selectedCities, ...selectedCountries];
+    const totalTrips = combinedPlaces.length;
     const travelData = {
-      visitedCities: selectedCities,
-      visitedCountries: selectedCountries,
-    }
-    localStorage.setItem("globetrotter-travel", JSON.stringify(travelData))
-    router.push("/dashboard")
-  }
+      placesVisited: combinedPlaces,
+      recentlyVisited: combinedPlaces[combinedPlaces.length - 1] || "",
+      noOfTrips: totalTrips,
+    };
 
-  const handleSkip = () => {
-    const travelData = {
-      visitedCities: [],
-      visitedCountries: [],
+    console.log("Travel Data being sent:", travelData);
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/trip/history`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(travelData),
+          credentials: "include",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error from server:", response.status, errorData);
+        alert(`Failed to save travel history: ${response.status}`);
+        return;
+      }
+
+      const result = await response.json();
+      console.log("Travel history saved successfully:", result);
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Network error sending travel history:", err);
+      alert("Network error. Please try again.");
     }
-    localStorage.setItem("globetrotter-travel", JSON.stringify(travelData))
-    router.push("/dashboard")
-  }
+  };
+
+  const handleSkip = async () => {
+    const travelData = {
+      placesVisited: [],
+      recentlyVisited: "",
+      noOfTrips: 0,
+    };
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/trip/history`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(travelData),
+          credentials: "include",
+        }
+      );
+
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Network error:", err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
@@ -188,7 +244,9 @@ export default function TravelHistoryPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="text-white text-2xl font-bold">globetrotter</div>
-            <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">BETA</div>
+            <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">
+              BETA
+            </div>
           </div>
           <Button
             onClick={() => router.push("/onboarding")}
@@ -209,11 +267,17 @@ export default function TravelHistoryPage() {
         >
           {/* Header Message */}
           <div className="bg-white border-4 border-black p-6 mb-8 text-center">
-            <h2 className="text-3xl font-black text-black mb-3 uppercase">SHARE YOUR TRAVEL HISTORY</h2>
-            <p className="text-black font-medium mb-4">Tell us about the amazing places you've already explored</p>
+            <h2 className="text-3xl font-black text-black mb-3 uppercase">
+              SHARE YOUR TRAVEL HISTORY
+            </h2>
+            <p className="text-black font-medium mb-4">
+              Tell us about the amazing places you've already explored
+            </p>
             <div className="inline-flex items-center gap-2 bg-yellow-400 border-2 border-black px-4 py-2">
               <Globe className="w-5 h-5 text-black" />
-              <span className="font-black text-black uppercase">Total Trips: {totalTrips}</span>
+              <span className="font-black text-black uppercase">
+                Total Trips: {totalTrips}
+              </span>
             </div>
           </div>
 
@@ -221,7 +285,9 @@ export default function TravelHistoryPage() {
             {/* Selected Items Display */}
             {(selectedCities.length > 0 || selectedCountries.length > 0) && (
               <div className="mb-8 p-4 bg-gray-100 border-2 border-black">
-                <h3 className="text-lg font-black text-black mb-4 uppercase">Your Selected Places</h3>
+                <h3 className="text-lg font-black text-black mb-4 uppercase">
+                  Your Selected Places
+                </h3>
 
                 {selectedCities.length > 0 && (
                   <div className="mb-4">
@@ -278,9 +344,13 @@ export default function TravelHistoryPage() {
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <MapPin className="w-6 h-6 text-black" />
-                  <h3 className="text-xl font-black text-black uppercase">Cities in India</h3>
+                  <h3 className="text-xl font-black text-black uppercase">
+                    Cities in India
+                  </h3>
                   <div className="bg-yellow-400 border-2 border-black px-3 py-1">
-                    <span className="text-black font-bold text-sm">{selectedCities.length} SELECTED</span>
+                    <span className="text-black font-bold text-sm">
+                      {selectedCities.length} SELECTED
+                    </span>
                   </div>
                 </div>
 
@@ -318,9 +388,13 @@ export default function TravelHistoryPage() {
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <Globe className="w-6 h-6 text-black" />
-                  <h3 className="text-xl font-black text-black uppercase">Countries Visited</h3>
+                  <h3 className="text-xl font-black text-black uppercase">
+                    Countries Visited
+                  </h3>
                   <div className="bg-red-500 border-2 border-black px-3 py-1">
-                    <span className="text-white font-bold text-sm">{selectedCountries.length} SELECTED</span>
+                    <span className="text-white font-bold text-sm">
+                      {selectedCountries.length} SELECTED
+                    </span>
                   </div>
                 </div>
 
@@ -382,5 +456,5 @@ export default function TravelHistoryPage() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }
