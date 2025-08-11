@@ -5,16 +5,22 @@ const generateToken = require("../utils/generateToken");
 
 const register = async (req, res) => {
     try {
-        const { username, age, city, country, email, phoneNumber, password } = req.body;
+        const { name, username, age, city, country, email, phoneNumber, password } = req.body;
 
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
-        if (existingUser) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
+        const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
+        if (existingUserByEmail) {
+            return res.status(400).json({ success: false, message: 'User with this email already exists' });
+        }
+
+        const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
+        if (existingUserByUsername) {
+            return res.status(400).json({ success: false, message: 'Username not available' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 12);
 
         const user = await User.create({
+            name: name.trim(),
             username: username.trim(),
             age,
             city: city?.trim(),
@@ -63,8 +69,18 @@ const googleAuthCallback = async (accessToken, refreshToken, profile, done) => {
         let user = await User.findOne({ email });
 
         if (!user) {
+            let uniqueUsername = profile.displayName;
+            let usernameExists = await User.findOne({ username: uniqueUsername });
+            let counter = 1;
+            while (usernameExists) {
+                uniqueUsername = `${profile.displayName}${counter}`;
+                usernameExists = await User.findOne({ username: uniqueUsername });
+                counter++;
+            }
+
             user = await User.create({
-                username: profile.displayName,
+                name: profile.displayName,
+                username: uniqueUsername,
                 age: null,
                 city: '',
                 country: '',

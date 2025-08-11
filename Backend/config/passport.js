@@ -30,9 +30,8 @@ passport.use(
                     user = await User.create({
                         googleId: profile.id,
                         email: profile.emails[0].value,
-                        username:
-                            profile.displayName ||
-                            profile.emails[0].value.split('@')[0],
+                        name: profile.displayName || '',
+                        username: '',
                         age: null,
                         city: '',
                         country: '',

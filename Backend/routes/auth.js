@@ -15,19 +15,23 @@ const createToken = (userId) => {
 
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password, age, city, country, phoneNumber } = req.body;
+    const { name, username, email, password, age, city, country, phoneNumber } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'username, email, and password are required' });
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ message: 'name, username, email, and password are required' });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) return res.status(400).json({ message: 'User already exists' });
+    const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
+    if (existingUserByEmail) return res.status(400).json({ message: 'User with this email already exists' });
+
+    const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
+    if (existingUserByUsername) return res.status(400).json({ message: 'Username not available' });
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await User.create({
-      username,
+      name,
+      username: username.toLowerCase(),
       email: email.toLowerCase(),
       password: hashedPassword,
       age,
@@ -46,7 +50,7 @@ router.post('/register', async (req, res) => {
 
     req.login(user, (err) => {
       if (err) console.error(err);
-      return res.status(201).json({ message: 'User registered', user: { id: user._id, email: user.email, username: user.username } });
+      return res.status(201).json({ message: 'User registered', user: { id: user._id, name: user.name, username: user.username, email: user.email } });
     });
 
   } catch (err) {
@@ -57,10 +61,11 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+    const { email, password, username } = req.body;
+    if (!email || !password || !username) return res.status(400).json({ message: 'Email, password, and username are required' });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase() } || { username: username.toLowerCase() });
+
     if (!user || !user.password) return res.status(401).json({ message: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -112,8 +117,9 @@ router.get('/me', (req, res) => {
 
   res.json({
     id: req.user._id,
-    email: req.user.email,
+    name: req.user.name,
     username: req.user.username,
+    email: req.user.email,
     age: req.user.age,
     city: req.user.city,
     country: req.user.country,
