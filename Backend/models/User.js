@@ -3,7 +3,12 @@ const { Schema } = mongoose;
 
 const userSchema = new Schema(
   {
-    name: {
+    f_name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    l_name: {
       type: String,
       required: true,
       trim: true,

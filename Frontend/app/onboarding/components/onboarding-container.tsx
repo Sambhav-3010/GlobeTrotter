@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import AuthPage from "./AuthPage"
-import ProfileDetails from "./ProfileDetails"
-import TravelHistory from "./TravelHistory"
-import TripDetails from "./TripDetails"
-import ProgressBar from "./ProgressBar"
+import AuthPage from "./auth-page"
+import ProfileDetails from "./profile-details"
+import TravelHistory from "./travel-history"
+import TripDetails from "./trip-details"
+import ProgressBar from "./progress-bar"
 
 export interface UserData {
   email: string
@@ -104,6 +104,7 @@ export default function OnboardingContainer() {
               updateUserData={updateUserData}
               nextStep={nextStep}
               prevStep={prevStep}
+              currentStep={currentStep}
             />
           </motion.div>
         </AnimatePresence>

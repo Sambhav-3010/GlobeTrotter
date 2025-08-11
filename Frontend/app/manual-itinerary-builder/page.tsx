@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { motion } from "framer-motion"
 import {
@@ -25,10 +24,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-
-interface ManualItineraryBuilderProps {
-  onBack: () => void
-}
+import { useRouter } from "next/navigation"
 
 interface TripDetails {
   budget: string
@@ -104,7 +100,8 @@ const sampleSearchResults = {
   ],
 }
 
-export default function ManualItineraryBuilder({ onBack }: ManualItineraryBuilderProps) {
+export default function ManualItineraryBuilderPage() {
+  const router = useRouter()
   const [step, setStep] = useState<"details" | "builder">("details")
   const [tripDetails, setTripDetails] = useState<TripDetails>({
     budget: "",
@@ -180,7 +177,7 @@ export default function ManualItineraryBuilder({ onBack }: ManualItineraryBuilde
         <div className="bg-black p-4">
           <div className="max-w-6xl mx-auto flex items-center">
             <Button
-              onClick={onBack}
+              onClick={() => router.push("/dashboard")}
               className="bg-white hover:bg-gray-100 text-black font-bold border-2 border-white mr-4"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />

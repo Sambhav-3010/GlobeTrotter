@@ -1,21 +1,16 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { User, ArrowRight, ArrowLeft, Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-interface ProfileDetailsProps {
-  userData: any
-  updateUserData: (data: any) => void
-  nextStep: () => void
-  prevStep: () => void
-}
+import { useRouter } from "next/navigation"
+import { useUser } from "../context/UserContext"
+import Cookies from "js-cookie"
 
 const indianCities = [
   "Mumbai",
@@ -56,38 +51,37 @@ const indianCities = [
   "Allahabad",
 ]
 
-export default function ProfileDetails({ userData, updateUserData, nextStep, prevStep }: ProfileDetailsProps) {
+export default function OnboardingPage() {
+  const router = useRouter()
+  const { user, setUser } = useUser()
   const [formData, setFormData] = useState({
-    firstName: userData.firstName || "",
-    lastName: userData.lastName || "",
-    mobile: userData.mobile || "",
-    gender: userData.gender || "",
-    age: userData.age || "",
-    city: userData.city || "",
-    profilePhoto: userData.profilePhoto || null,
+    f_name: user?.f_name || "",
+    l_name: user?.l_name || "",
+    username: user?.username || "",
+    email: user?.email || "",
+    mobile: user?.mobile || "",
+    gender: user?.gender || "",
+    age: user?.age ? String(user.age) : "",
+    city: user?.city || "",
+    placesVisited: user?.placesVisited || ([] as string[]),
+    profilePhoto: user?.profilePhoto || null,
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
-  const [photoPreview, setPhotoPreview] = useState<string | null>(userData.profilePhoto || null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    // Pre-fill data from localStorage after signup
+    if (!user) {
+      router.push("/auth")
+    }
+  }, [router])
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
 
-    if (!formData.firstName) {
-      newErrors.firstName = "First name is required"
-    }
-
-    if (!formData.lastName) {
-      newErrors.lastName = "Last name is required"
-    }
-
-    if (!formData.mobile) {
-      newErrors.mobile = "Mobile number is required"
-    } else if (!/^[6-9]\d{9}$/.test(formData.mobile)) {
-      newErrors.mobile = "Please enter a valid Indian mobile number"
-    }
-
-    if (!formData.gender) {
-      newErrors.gender = "Please select your gender"
+    if (!formData.username) {
+      newErrors.username = "Username is required"
     }
 
     if (!formData.age) {
@@ -104,23 +98,58 @@ export default function ProfileDetails({ userData, updateUserData, nextStep, pre
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (validateForm()) {
-      updateUserData({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        mobile: formData.mobile,
-        gender: formData.gender,
-        age: Number.parseInt(formData.age),
-        city: formData.city,
-        profilePhoto: formData.profilePhoto,
-      })
-      nextStep()
+    if (!validateForm()) {
+      return
+    }
+
+    setLoading(true)
+    setErrors({})
+
+    try {
+      const token = Cookies.get("token")
+      const userId = user?.id
+
+      if (!token || !userId) {
+        setErrors({ api: "Authentication token or user ID missing." })
+        setLoading(false)
+        return
+      }
+
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          age: Number.parseInt(formData.age),
+          city: formData.city,
+          phoneNumber: formData.mobile,
+          gender: formData.gender,
+          placesVisited: formData.placesVisited,
+          profilePhoto: formData.profilePhoto,
+        }),
+      });
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setUser(data.user) // Update user context and local storage
+        router.push("/dashboard") // Redirect to dashboard after onboarding
+      } else {
+        setErrors({ api: data.message || "Failed to update profile." })
+      }
+    } catch (error: any) {
+      setErrors({ api: error.message || "Network error. Please try again." });
+    } finally {
+      setLoading(false);
     }
   }
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }))
@@ -141,29 +170,25 @@ export default function ProfileDetails({ userData, updateUserData, nextStep, pre
   }
 
   const handleSkip = () => {
-    if (formData.firstName && formData.lastName) {
-      updateUserData({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        mobile: formData.mobile || "",
-        gender: formData.gender || "",
-        age: formData.age ? Number.parseInt(formData.age) : 0,
-        city: formData.city || "",
-        profilePhoto: formData.profilePhoto,
-      })
-      nextStep()
-    }
+    router.push("/dashboard")
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
       {/* Header */}
       <div className="bg-black p-4">
-        <div className="max-w-6xl mx-auto flex items-center">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="text-white text-2xl font-bold">globetrotter</div>
             <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">BETA</div>
           </div>
+          <Button
+            onClick={() => router.push("/auth")}
+            className="bg-white hover:bg-gray-100 text-black font-bold border-2 border-white"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            BACK
+          </Button>
         </div>
       </div>
 
@@ -204,37 +229,63 @@ export default function ProfileDetails({ userData, updateUserData, nextStep, pre
                 <p className="text-black font-bold text-sm mt-2 uppercase">Upload Profile Photo</p>
               </div>
 
-              {/* Name Fields */}
+              {/* Name Fields (Read-only) */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="firstName" className="text-black font-bold text-sm uppercase tracking-wide">
+                  <Label htmlFor="f_name" className="text-black font-bold text-sm uppercase tracking-wide">
                     First Name
                   </Label>
                   <Input
-                    id="firstName"
+                    id="f_name"
                     type="text"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium"
-                    placeholder="Enter your first name"
+                    value={formData.f_name}
+                    readOnly
+                    className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium bg-gray-100 cursor-not-allowed"
                   />
-                  {errors.firstName && <p className="text-red-600 text-sm mt-1 font-medium">{errors.firstName}</p>}
                 </div>
 
                 <div>
-                  <Label htmlFor="lastName" className="text-black font-bold text-sm uppercase tracking-wide">
+                  <Label htmlFor="l_name" className="text-black font-bold text-sm uppercase tracking-wide">
                     Last Name
                   </Label>
                   <Input
-                    id="lastName"
+                    id="l_name"
                     type="text"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium"
-                    placeholder="Enter your last name"
+                    value={formData.l_name}
+                    readOnly
+                    className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium bg-gray-100 cursor-not-allowed"
                   />
-                  {errors.lastName && <p className="text-red-600 text-sm mt-1 font-medium">{errors.lastName}</p>}
                 </div>
+              </div>
+
+              {/* Email (Read-only) */}
+              <div>
+                <Label htmlFor="email" className="text-black font-bold text-sm uppercase tracking-wide">
+                  Email Address
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  readOnly
+                  className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+
+              {/* Username */}
+              <div>
+                <Label htmlFor="username" className="text-black font-bold text-sm uppercase tracking-wide">
+                  Username
+                </Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => handleInputChange("username", e.target.value)}
+                  className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium"
+                  placeholder="Choose a unique username"
+                />
+                {errors.username && <p className="text-red-600 text-sm mt-1 font-medium">{errors.username}</p>}
               </div>
 
               {/* Mobile Number */}
@@ -310,11 +361,28 @@ export default function ProfileDetails({ userData, updateUserData, nextStep, pre
                 {errors.city && <p className="text-red-600 text-sm mt-1 font-medium">{errors.city}</p>}
               </div>
 
+              {/* Places Visited */}
+              <div>
+                <Label htmlFor="placesVisited" className="text-black font-bold text-sm uppercase tracking-wide">
+                  Places Visited (comma-separated)
+                </Label>
+                <Input
+                  id="placesVisited"
+                  type="text"
+                  value={formData.placesVisited.join(", ")}
+                  onChange={(e) => handleInputChange("placesVisited", e.target.value.split(",").map(s => s.trim()))}
+                  className="h-12 mt-2 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium"
+                  placeholder="e.g., Paris, Tokyo, New York"
+                />
+              </div>
+
+              {errors.api && <p className="text-red-600 text-sm mt-1 font-medium text-center">{errors.api}</p>}
+
               {/* Navigation Buttons */}
               <div className="flex gap-4 pt-6">
                 <Button
                   type="button"
-                  onClick={prevStep}
+                  onClick={() => router.push("/auth")}
                   className="flex-1 h-12 bg-white hover:bg-gray-50 text-black font-bold border-2 border-black"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -330,8 +398,9 @@ export default function ProfileDetails({ userData, updateUserData, nextStep, pre
                 <Button
                   type="submit"
                   className="flex-1 h-12 bg-red-500 hover:bg-red-600 text-white font-bold border-2 border-black"
+                  disabled={loading}
                 >
-                  CONTINUE
+                  {loading ? "SAVING..." : "CONTINUE"}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>

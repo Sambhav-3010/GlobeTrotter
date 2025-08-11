@@ -5,7 +5,7 @@ const generateToken = require("../utils/generateToken");
 
 const register = async (req, res) => {
     try {
-        const { name, username, age, city, country, email, phoneNumber, password } = req.body;
+        const { f_name, l_name, username, age, city, country, email, phoneNumber, password } = req.body;
 
         const existingUserByEmail = await User.findOne({ email: email.toLowerCase() });
         if (existingUserByEmail) {
@@ -20,7 +20,8 @@ const register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 12);
 
         const user = await User.create({
-            name: name.trim(),
+            f_name: f_name.trim(),
+            l_name: l_name.trim(),
             username: username.trim(),
             age,
             city: city?.trim(),
@@ -78,8 +79,13 @@ const googleAuthCallback = async (accessToken, refreshToken, profile, done) => {
                 counter++;
             }
 
+            const nameParts = profile.displayName.split(' ');
+            const f_name = nameParts[0] || '';
+            const l_name = nameParts.slice(1).join(' ') || '';
+
             user = await User.create({
-                name: profile.displayName,
+                f_name: f_name,
+                l_name: l_name,
                 username: uniqueUsername,
                 age: null,
                 city: '',

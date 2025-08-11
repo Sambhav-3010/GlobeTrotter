@@ -27,11 +27,25 @@ passport.use(
                 let user = await User.findOne({ googleId: profile.id });
 
                 if (!user) {
+                    const nameParts = profile.displayName.split(' ');
+                    const f_name = nameParts[0] || '';
+                    const l_name = nameParts.slice(1).join(' ') || '';
+
+                    let uniqueUsername = profile.displayName;
+                    let usernameExists = await User.findOne({ username: uniqueUsername });
+                    let counter = 1;
+                    while (usernameExists) {
+                        uniqueUsername = `${profile.displayName}${counter}`;
+                        usernameExists = await User.findOne({ username: uniqueUsername });
+                        counter++;
+                    }
+
                     user = await User.create({
                         googleId: profile.id,
                         email: profile.emails[0].value,
-                        name: profile.displayName || '',
-                        username: '',
+                        f_name: f_name,
+                        l_name: l_name,
+                        username: uniqueUsername,
                         age: null,
                         city: '',
                         country: '',

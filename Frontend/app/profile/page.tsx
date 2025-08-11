@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   ArrowLeft,
@@ -26,11 +25,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-
-interface ProfilePageProps {
-  onBack: () => void
-  userData: any
-}
+import { useRouter } from "next/navigation"
 
 const indianCities = [
   "Mumbai",
@@ -64,23 +59,54 @@ const languages = [
   "Malayalam",
 ]
 
-export default function ProfilePage({ onBack, userData }: ProfilePageProps) {
+export default function ProfilePage() {
   const { toast } = useToast()
+  const router = useRouter()
+  const [userData, setUserData] = useState<any>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editData, setEditData] = useState({
-    firstName: userData?.firstName || "",
-    lastName: userData?.lastName || "",
-    email: userData?.email || "",
-    mobile: userData?.mobile || "",
-    gender: userData?.gender || "",
-    age: userData?.age || "",
-    city: userData?.city || "",
-    profilePhoto: userData?.profilePhoto || null,
-    language: userData?.language || "english",
-    visitedCities: userData?.visitedCities || [],
-    visitedCountries: userData?.visitedCountries || [],
+    firstName: "",
+    lastName: "",
+    email: "",
+    mobile: "",
+    gender: "",
+    age: "",
+    city: "",
+    profilePhoto: null as string | null,
+    language: "english",
+    visitedCities: [] as string[],
+    visitedCountries: [] as string[],
   })
-  const [photoPreview, setPhotoPreview] = useState<string | null>(userData?.profilePhoto || null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Load user data from localStorage
+    const profile = localStorage.getItem("globetrotter-profile")
+    const travel = localStorage.getItem("globetrotter-travel")
+
+    if (profile) {
+      const profileData = JSON.parse(profile)
+      const travelData = travel ? JSON.parse(travel) : { visitedCities: [], visitedCountries: [] }
+      const combinedData = { ...profileData, ...travelData }
+      setUserData(combinedData)
+      setEditData({
+        firstName: combinedData.firstName || "",
+        lastName: combinedData.lastName || "",
+        email: combinedData.email || "",
+        mobile: combinedData.mobile || "",
+        gender: combinedData.gender || "",
+        age: combinedData.age?.toString() || "",
+        city: combinedData.city || "",
+        profilePhoto: combinedData.profilePhoto || null,
+        language: combinedData.language || "english",
+        visitedCities: combinedData.visitedCities || [],
+        visitedCountries: combinedData.visitedCountries || [],
+      })
+      setPhotoPreview(combinedData.profilePhoto || null)
+    } else {
+      router.push("/auth")
+    }
+  }, [router])
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -96,8 +122,25 @@ export default function ProfilePage({ onBack, userData }: ProfilePageProps) {
   }
 
   const handleSaveChanges = () => {
-    const updatedData = { ...userData, ...editData }
-    localStorage.setItem("globetrotter-onboarding", JSON.stringify(updatedData))
+    const updatedProfile = {
+      firstName: editData.firstName,
+      lastName: editData.lastName,
+      email: editData.email,
+      mobile: editData.mobile,
+      gender: editData.gender,
+      age: Number.parseInt(editData.age),
+      city: editData.city,
+      profilePhoto: editData.profilePhoto,
+      language: editData.language,
+    }
+
+    const updatedTravel = {
+      visitedCities: editData.visitedCities,
+      visitedCountries: editData.visitedCountries,
+    }
+
+    localStorage.setItem("globetrotter-profile", JSON.stringify(updatedProfile))
+    localStorage.setItem("globetrotter-travel", JSON.stringify(updatedTravel))
 
     setIsEditModalOpen(false)
     toast({
@@ -117,12 +160,16 @@ export default function ProfilePage({ onBack, userData }: ProfilePageProps) {
         variant: "destructive",
       })
       setTimeout(() => {
-        window.location.href = "/"
+        router.push("/auth")
       }, 1000)
     }
   }
 
   const totalTrips = (userData?.visitedCities?.length || 0) + (userData?.visitedCountries?.length || 0)
+
+  if (!userData) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
@@ -130,7 +177,10 @@ export default function ProfilePage({ onBack, userData }: ProfilePageProps) {
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button onClick={onBack} className="bg-white hover:bg-gray-100 text-black font-bold border-2 border-white">
+            <Button
+              onClick={() => router.push("/dashboard")}
+              className="bg-white hover:bg-gray-100 text-black font-bold border-2 border-white"
+            >
               <ArrowLeft className="w-5 h-5 mr-2" />
               BACK
             </Button>

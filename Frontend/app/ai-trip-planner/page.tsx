@@ -22,10 +22,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-interface AITripPlannerProps {
-  onBack: () => void
-}
+import { useRouter } from "next/navigation"
 
 interface Message {
   id: string
@@ -95,7 +92,8 @@ const sampleItineraries: GeneratedItinerary[] = [
   },
 ]
 
-export default function AITripPlanner({ onBack }: AITripPlannerProps) {
+export default function AITripPlannerPage() {
+  const router = useRouter()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -195,7 +193,10 @@ export default function AITripPlanner({ onBack }: AITripPlannerProps) {
       <div className="bg-black p-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button onClick={onBack} className="bg-white hover:bg-gray-100 text-black font-bold border-2 border-white">
+            <Button
+              onClick={() => router.push("/dashboard")}
+              className="bg-white hover:bg-gray-100 text-black font-bold border-2 border-white"
+            >
               <ArrowLeft className="w-5 h-5 mr-2" />
               BACK
             </Button>

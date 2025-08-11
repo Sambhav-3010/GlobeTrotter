@@ -1,12 +1,10 @@
-import OnboardingContainer from "../components/OnboardingContainer"
-import { ThemeProvider } from "../components/ThemeProvider"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 
-export default function Home() {
-  return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <OnboardingContainer />
-      </div>
-    </ThemeProvider>
-  )
+export default async function Home() {
+  const cookieStore = await cookies();
+  if (cookieStore.has("token")) {
+    return redirect("/dashboard");
+  }
+  redirect("/auth");
 }
