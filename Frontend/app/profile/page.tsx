@@ -65,8 +65,8 @@ export default function ProfilePage() {
   const [userData, setUserData] = useState<any>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editData, setEditData] = useState({
-    firstName: "",
-    lastName: "",
+    f_name: "",
+    l_name: "",
     email: "",
     mobile: "",
     gender: "",
@@ -80,18 +80,18 @@ export default function ProfilePage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load user data from localStorage
-    const profile = localStorage.getItem("globetrotter-profile")
+    const profile = localStorage.getItem("user")
     const travel = localStorage.getItem("globetrotter-travel")
 
     if (profile) {
       const profileData = JSON.parse(profile)
       const travelData = travel ? JSON.parse(travel) : { visitedCities: [], visitedCountries: [] }
       const combinedData = { ...profileData, ...travelData }
+      console.log(combinedData)
       setUserData(combinedData)
       setEditData({
-        firstName: combinedData.firstName || "",
-        lastName: combinedData.lastName || "",
+        f_name: combinedData.f_name || "",
+        l_name: combinedData.l_name || "",
         email: combinedData.email || "",
         mobile: combinedData.mobile || "",
         gender: combinedData.gender || "",
