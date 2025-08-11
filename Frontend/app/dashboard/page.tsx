@@ -96,15 +96,6 @@ export default function DashboardPage() {
             </Button>
 
             <Button
-              onClick={toggleTheme}
-              variant="ghost"
-              size="icon"
-              className="w-10 h-10 text-white hover:bg-white/20 border-2 border-white"
-            >
-              {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-            </Button>
-
-            <Button
               onClick={handleSignOut}
               className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-white"
             >

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useUser } from "../../../context/UserContext"
+import { useUser } from "../../context/UserContext"
 import Cookies from "js-cookie"
 
 export default function GoogleCallbackPage() {
