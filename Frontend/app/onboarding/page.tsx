@@ -132,8 +132,8 @@ export default function OnboardingPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setUser(data.user) // Update user context and local storage
-        router.push("/dashboard") // Redirect to dashboard after onboarding
+        setUser(data.user)
+        router.push("/dashboard")
       } else {
         setErrors({ api: data.message || "Failed to update profile." })
       }

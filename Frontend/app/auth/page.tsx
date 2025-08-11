@@ -80,7 +80,7 @@ export default function AuthPage() {
       console.log("Response data:", data)
 
       if (response.ok) {
-        document.cookie = `token=${data.user.token}; path=/; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}`;
+        document.cookie = `token=${data.token}; path=/; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}`;
         localStorage.setItem("user", JSON.stringify(data.user))
         toast.success(data.message)
         if (isLogin) {

@@ -78,8 +78,8 @@ router.post("/register", async (req, res) => {
           l_name: user.l_name,
           username: user.username,
           email: user.email,
-          token,
         },
+        token,
       });
     });
   } catch (err) {
@@ -91,7 +91,6 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     if (req.user) {
-      // If user is already authenticated, return existing session token
       const token = createToken(req.user._id);
       return res
         .status(200)
@@ -131,6 +130,7 @@ router.post("/login", async (req, res) => {
           username: req.user.username,
           age: req.user.age,
         },
+        token,
       });
     });
   } catch (err) {
@@ -180,15 +180,32 @@ router.get("/logout", (req, res) => {
   });
 });
 
-router.get("/me", (req, res) => {
-  if (!req.user) return res.status(401).json({ message: "Not authenticated" });
+router.post("/me", async (req, res) => {
+  try {
+    const { id } = req.body;
+    const user = await User.findById(id).select(
+      "f_name l_name phoneNumber city age recentlyVisited placesVisited email numberOfTrips"
+    );
 
-  res.json({
-    id: req.user._id,
-    f_name: req.user.f_name,
-    username: req.user.username,
-    age: req.user.age,
-  });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      id: user._id,
+      fullName: `${user.f_name} ${user.l_name}`,
+      phoneNumber: user.phoneNumber,
+      city: user.city,
+      email: user.email,
+      numberOfTrips: user.numberOfTrips,
+      age: user.age,
+      recentlyVisited: user.recentlyVisited,
+      placesVisited: user.placesVisited,
+    });
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 // Middleware to protect routes
