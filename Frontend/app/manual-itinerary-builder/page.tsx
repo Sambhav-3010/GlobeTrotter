@@ -1,28 +1,27 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { ArrowLeft, Plane, Hotel, Camera, Utensils, ArrowRight, MapPin } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  ArrowLeft,
+  Plane,
+  Hotel,
+  Camera,
+  ArrowRight,
+  MapPin,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface TripDetails {
-  budget: string
-  tripType: string
-  destination: string
-  startDate: string
-  endDate: string
+  budget: string;
+  tripType: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
 }
 
 const steps = [
-  {
-    id: "travel",
-    title: "TRAVEL",
-    description: "Choose flights and trains",
-    icon: Plane,
-    route: "/manual-itinerary-builder/travel",
-    color: "bg-blue-500",
-  },
   {
     id: "hotels",
     title: "HOTELS",
@@ -40,40 +39,45 @@ const steps = [
     color: "bg-purple-500",
   },
   {
-    id: "dining",
-    title: "DINING",
-    description: "Find restaurants",
-    icon: Utensils,
-    route: "/manual-itinerary-builder/dining",
-    color: "bg-orange-500",
+    id: "travel",
+    title: "TRAVEL",
+    description: "Choose flights and trains",
+    icon: Plane,
+    route: "/manual-itinerary-builder/travel",
+    color: "bg-blue-500",
   },
-]
+];
 
 export default function ManualItineraryBuilderPage() {
-  const router = useRouter()
-  const [tripDetails, setTripDetails] = useState<TripDetails | null>(null)
-  const [completedSteps, setCompletedSteps] = useState<string[]>([])
+  const router = useRouter();
+  const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
+  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
 
   useEffect(() => {
-    // Load trip details and progress from localStorage
-    const savedDetails = localStorage.getItem("trip-details")
-    const savedProgress = localStorage.getItem("trip-progress")
+    const savedDetails = localStorage.getItem("trip-details");
+    const savedProgress = localStorage.getItem("trip-progress");
 
     if (savedDetails) {
-      setTripDetails(JSON.parse(savedDetails))
+      setTripDetails(JSON.parse(savedDetails));
     }
     if (savedProgress) {
-      setCompletedSteps(JSON.parse(savedProgress))
+      const parsedProgress: string[] = JSON.parse(savedProgress);
+      const validIds = steps.map((step) => step.id);
+      const filteredProgress = parsedProgress.filter((id) =>
+        validIds.includes(id)
+      );
+      setCompletedSteps(filteredProgress);
+      localStorage.setItem("trip-progress", JSON.stringify(filteredProgress));
     }
-  }, [])
+  }, []);
 
   const handleStepClick = (route: string) => {
-    router.push(route)
-  }
+    router.push(route);
+  };
 
   const handleBack = () => {
-    router.push("/dashboard")
-  }
+    router.push("/dashboard");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
@@ -88,7 +92,9 @@ export default function ManualItineraryBuilderPage() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               BACK
             </Button>
-            <div className="text-white text-2xl font-bold">MANUAL TRIP BUILDER</div>
+            <div className="text-white text-2xl font-bold">
+              MANUAL TRIP BUILDER
+            </div>
           </div>
         </div>
       </div>
@@ -101,14 +107,22 @@ export default function ManualItineraryBuilderPage() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white border-4 border-black p-6 mb-8"
           >
-            <h2 className="text-2xl font-black text-black mb-4 uppercase">Your Trip Details</h2>
+            <h2 className="text-2xl font-black text-black mb-4 uppercase">
+              Your Trip Details
+            </h2>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <p className="text-black font-bold">DESTINATION: {tripDetails.destination}</p>
-                <p className="text-black font-bold">BUDGET: {tripDetails.budget}</p>
+                <p className="text-black font-bold">
+                  DESTINATION: {tripDetails.destination}
+                </p>
+                <p className="text-black font-bold">
+                  BUDGET: {tripDetails.budget}
+                </p>
               </div>
               <div>
-                <p className="text-black font-bold">TYPE: {tripDetails.tripType}</p>
+                <p className="text-black font-bold">
+                  TYPE: {tripDetails.tripType}
+                </p>
                 <p className="text-black font-bold">
                   DATES: {tripDetails.startDate} - {tripDetails.endDate}
                 </p>
@@ -125,19 +139,24 @@ export default function ManualItineraryBuilderPage() {
         >
           <div className="text-center">
             <MapPin className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-4xl font-black text-black mb-4 uppercase">Build Your Perfect Trip</h1>
+            <h1 className="text-4xl font-black text-black mb-4 uppercase">
+              Build Your Perfect Trip
+            </h1>
             <p className="text-black font-medium text-lg">
-              Create your custom itinerary step by step. Choose your travel, accommodations, activities, and dining
-              options.
+              Create your custom itinerary step by step. Choose your travel,
+              accommodations and activities options.
             </p>
           </div>
         </motion.div>
 
         {/* Step Cards */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {steps.map((step, index) => {
-            const Icon = step.icon
-            const isCompleted = completedSteps.includes(step.id)
+            const Icon = step.icon;
+            const isCompleted = completedSteps.includes(step.id);
+            const isLast = index === steps.length - 1;
+            const oddSteps = steps.length % 2 !== 0;
+            const cardClass = oddSteps && isLast ? "md:col-span-2" : "";
 
             return (
               <motion.div
@@ -145,7 +164,7 @@ export default function ManualItineraryBuilderPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white border-4 border-black overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                className={`bg-white w-full border-4 border-black overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${cardClass}`}
                 onClick={() => handleStepClick(step.route)}
               >
                 <div className={`${step.color} p-4 border-b-4 border-black`}>
@@ -153,26 +172,33 @@ export default function ManualItineraryBuilderPage() {
                     <div className="flex items-center gap-3">
                       <Icon className="w-8 h-8 text-white" />
                       <div>
-                        <h3 className="text-xl font-black text-white">{step.title}</h3>
-                        <p className="text-white font-medium">{step.description}</p>
+                        <h3 className="text-xl font-black text-white">
+                          {step.title}
+                        </h3>
+                        <p className="text-white font-medium">
+                          {step.description}
+                        </p>
                       </div>
                     </div>
                     {isCompleted && (
-                      <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">✓ DONE</div>
+                      <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">
+                        ✓ DONE
+                      </div>
                     )}
                   </div>
                 </div>
-
                 <div className="p-6">
                   <div className="flex items-center justify-between">
                     <p className="text-black font-medium">
-                      {isCompleted ? "Review and modify your selections" : "Start planning this section"}
+                      {isCompleted
+                        ? "Review and modify your selections"
+                        : "Start planning this section"}
                     </p>
                     <ArrowRight className="w-5 h-5 text-black" />
                   </div>
                 </div>
               </motion.div>
-            )
+            );
           })}
         </div>
 
@@ -185,7 +211,9 @@ export default function ManualItineraryBuilderPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-black text-black mb-2 uppercase">Progress</h3>
+              <h3 className="text-xl font-black text-black mb-2 uppercase">
+                Progress
+              </h3>
               <p className="text-black font-medium">
                 {completedSteps.length} of {steps.length} sections completed
               </p>
@@ -195,7 +223,9 @@ export default function ManualItineraryBuilderPage() {
                 <div
                   key={step.id}
                   className={`w-4 h-4 border-2 border-black ${
-                    completedSteps.includes(step.id) ? "bg-yellow-400" : "bg-gray-200"
+                    completedSteps.includes(step.id)
+                      ? "bg-yellow-400"
+                      : "bg-gray-200"
                   }`}
                 />
               ))}
@@ -215,5 +245,5 @@ export default function ManualItineraryBuilderPage() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }

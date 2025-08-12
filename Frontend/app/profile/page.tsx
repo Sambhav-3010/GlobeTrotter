@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 export default function ProfilePage() {
   const router = useRouter();
   const [userData, setUserData] = useState<any | null>(null);
+  const [myTrips, setMyTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function ProfilePage() {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
           {
-            method: "POST", // ideally this should be GET with JWT auth, but using POST if you send body with id
+            method: "POST",
             credentials: "include",
             headers: {
               "Content-Type": "application/json",
@@ -46,6 +47,25 @@ export default function ProfilePage() {
 
         const data = await res.json();
         setUserData(data);
+
+        // Fetch user's trips/itineraries
+        const tripsRes = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/trips/user/${user._id}`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (tripsRes.ok) {
+          const tripsData = await tripsRes.json();
+          setMyTrips(tripsData);
+        } else {
+          setMyTrips([]);
+        }
       } catch (err) {
         console.error(err);
         router.push("/auth");
@@ -105,9 +125,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-center gap-2 p-2 border-2 border-gray-200">
                   <Phone className="w-4 h-4" />
                   <span className="text-sm font-medium">
-                    {userData.phoneNumber
-                      ? `+91 ${userData.phoneNumber}`
-                      : ""}
+                    {userData.phoneNumber ? `+91 ${userData.phoneNumber}` : ""}
                   </span>
                 </div>
                 <div className="flex items-center justify-center gap-2 p-2 border-2 border-gray-200">
@@ -197,6 +215,35 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* My Itineraries */}
+      <motion.div className="bg-white border-4 border-black p-8">
+        <h3 className="text-xl font-black uppercase mb-4">My Itineraries</h3>
+        {myTrips.length === 0 ? (
+          <p>No itineraries created yet</p>
+        ) : (
+          <div className="space-y-4">
+            {myTrips.map((trip) => (
+              <div
+                key={trip._id}
+                className="bg-gray-50 border-2 border-black p-4 cursor-pointer hover:bg-gray-100"
+                onClick={() => router.push(`/trips/${trip._id}`)}
+              >
+                <h4 className="font-bold">{trip.place_of_visit}</h4>
+                <p>
+                  {new Date(trip.start_date).toLocaleDateString()} -{" "}
+                  {new Date(trip.end_date).toLocaleDateString()} (
+                  {trip.duration_of_visit} days)
+                </p>
+                <p>
+                  Budget: ₹{trip.overall_budget.toLocaleString()} | Spent: ₹
+                  {trip.total_spent.toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }
