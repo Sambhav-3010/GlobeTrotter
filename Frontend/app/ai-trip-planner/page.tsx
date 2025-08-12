@@ -16,6 +16,11 @@ import {
   Users,
   Share2,
   Edit3,
+  Utensils,
+  Bed,
+  Plane,
+  Map,
+  ListChecks
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +36,7 @@ interface Message {
   timestamp: Date
 }
 
+// This interface perfectly matches the detailed JSON schema from the backend
 interface GeneratedItinerary {
   id: string
   title: string
@@ -54,55 +60,17 @@ interface GeneratedItinerary {
   dining: string[]
 }
 
-const sampleItineraries: GeneratedItinerary[] = [
-  {
-    id: "1",
-    title: "Magical Rajasthan Adventure",
-    destination: "Rajasthan, India",
-    duration: "7 Days",
-    budget: "₹45,000",
-    days: [
-      {
-        day: 1,
-        title: "Arrival in Jaipur - The Pink City",
-        activities: ["City Palace visit", "Hawa Mahal photography", "Local market exploration"],
-        meals: ["Welcome dinner at Chokhi Dhani", "Traditional Rajasthani thali"],
-        accommodation: "Heritage hotel in old city",
-      },
-      {
-        day: 2,
-        title: "Jaipur Forts and Palaces",
-        activities: ["Amber Fort", "Jaigarh Fort", "Nahargarh Fort sunset"],
-        meals: ["Breakfast at hotel", "Lunch at Amber Fort", "Dinner at rooftop restaurant"],
-      },
-      {
-        day: 3,
-        title: "Journey to Udaipur",
-        activities: ["Travel to Udaipur", "City Palace complex", "Lake Pichola boat ride"],
-        meals: ["Breakfast", "Lunch en route", "Dinner with lake view"],
-      },
-    ],
-    flights: [
-      { departure: "Delhi (DEL)", arrival: "Jaipur (JAI)", price: "₹3,500" },
-      { departure: "Udaipur (UDR)", arrival: "Delhi (DEL)", price: "₹4,200" },
-    ],
-    places: ["City Palace Jaipur", "Hawa Mahal", "Amber Fort", "Lake Pichola", "Jagdish Temple"],
-    activities: ["Fort exploration", "Boat rides", "Cultural shows", "Shopping", "Photography"],
-    dining: ["Chokhi Dhani", "Ambrai Restaurant", "Millets of Mewar", "Jagat Niwas Palace"],
-  },
-]
+const questions = [
+    "First, where would you like to go? (e.g., Bali, Indonesia)",
+    "Great! When are you planning to travel? (e.g., August 20th to August 27th)",
+    "Got it. How many people are traveling?",
+    "Perfect. What type of trip is this? (e.g., Friends Trip, Honeymoon, Solo)",
+    "And finally, what's your approximate budget per person? (e.g., $1500 USD)"
+];
 
 export default function AITripPlannerPage() {
   const router = useRouter()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      type: "ai",
-      content:
-        "Hello! I'm your AI travel assistant. Tell me about your dream trip - where would you like to go, when, what's your budget, and what kind of experience are you looking for?",
-      timestamp: new Date(),
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState("")
   const [isTyping, setIsTyping] = useState(false)
   const [generatedItineraries, setGeneratedItineraries] = useState<GeneratedItinerary[]>([])
@@ -114,16 +82,96 @@ export default function AITripPlannerPage() {
   const [collaboratorRole, setCollaboratorRole] = useState<"editor" | "tag-along">("editor")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // State for the conversational questionnaire
+  const [conversationStage, setConversationStage] = useState(0);
+  const [tripDetails, setTripDetails] = useState({
+      destination: "",
+      dates: "",
+      num_people: "",
+      trip_type: "",
+      budget: ""
+  });
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
+  // Ask the first question when the component mounts
+  useEffect(() => {
+    setMessages([
+        {
+            id: "1",
+            type: "ai",
+            content: "Hello! I'm your AI travel assistant. Let's plan your dream trip together.",
+            timestamp: new Date(),
+        },
+        {
+            id: "2",
+            type: "ai",
+            content: questions[0],
+            timestamp: new Date(),
+        }
+    ])
+  }, []);
+
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages]);
+
+  const generateFullItinerary = async (details: typeof tripDetails) => {
+    setIsTyping(true);
+    setGeneratedItineraries([]);
+
+    const finalPrompt = `
+        Destination: ${details.destination}
+        Travel Dates: ${details.dates}
+        Number of People: ${details.num_people}
+        Trip Type: ${details.trip_type}
+        Budget per Person: ${details.budget}
+    `;
+
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/generate-itinerary`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: finalPrompt }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.details || `API error: ${response.statusText}`);
+        }
+
+        const itineraryData: GeneratedItinerary = await response.json();
+
+        const aiResponse: Message = {
+            id: (Date.now() + 1).toString(),
+            type: "ai",
+            content: `Excellent! Based on your answers, I've crafted a personalized plan for your trip to ${itineraryData.destination}. Check it out!`,
+            timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, aiResponse]);
+        setGeneratedItineraries([itineraryData]);
+
+    } catch (error: any) {
+        console.error("Failed to generate itinerary:", error);
+        const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: "ai",
+            content: `I'm sorry, I encountered an error while creating your itinerary. Please try again later. (Details: ${error.message})`,
+            timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+        setIsTyping(false);
+    }
+  }
+
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return
+    if (!inputMessage.trim() || conversationStage >= questions.length) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -132,36 +180,39 @@ export default function AITripPlannerPage() {
       timestamp: new Date(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
-    setInputMessage("")
-    setIsTyping(true)
+    setMessages((prev) => [...prev, userMessage]);
+    const currentInput = inputMessage;
+    setInputMessage("");
+    
+    // Store the answer
+    const newTripDetails = { ...tripDetails };
+    const detailKeys = ["destination", "dates", "num_people", "trip_type", "budget"];
+    newTripDetails[detailKeys[conversationStage]] = currentInput;
+    setTripDetails(newTripDetails);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "ai",
-        content:
-          "Based on your preferences, I've created some amazing itineraries for you! Let me generate detailed plans with day-by-day activities, accommodations, and budget breakdowns.",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, aiResponse])
-      setIsTyping(false)
+    const nextStage = conversationStage + 1;
+    setConversationStage(nextStage);
 
-      // Generate itineraries
-      setTimeout(() => {
-        setGeneratedItineraries(sampleItineraries)
-      }, 1000)
-    }, 2000)
+    // If there are more questions, ask the next one
+    if (nextStage < questions.length) {
+        const aiQuestion: Message = {
+            id: `ai-${nextStage}`,
+            type: "ai",
+            content: questions[nextStage],
+            timestamp: new Date()
+        };
+        setTimeout(() => setMessages((prev) => [...prev, aiQuestion]), 500);
+    } else {
+        // All questions answered, generate the itinerary
+        generateFullItinerary(newTripDetails);
+    }
   }
 
   const handleSaveTrip = () => {
     if (!tripName.trim() || !selectedItinerary) return
-
     console.log("Saving trip:", tripName, selectedItinerary)
     setShowSaveDialog(false)
     setTripName("")
-
     const successMessage: Message = {
       id: Date.now().toString(),
       type: "ai",
@@ -173,11 +224,9 @@ export default function AITripPlannerPage() {
 
   const handleInviteCollaborator = () => {
     if (!collaboratorEmail.trim()) return
-
     console.log("Inviting collaborator:", collaboratorEmail, collaboratorRole)
     setShowCollabDialog(false)
     setCollaboratorEmail("")
-
     const successMessage: Message = {
       id: Date.now().toString(),
       type: "ai",
@@ -283,7 +332,7 @@ export default function AITripPlannerPage() {
                         message.type === "user" ? "bg-red-500 text-white" : "bg-gray-100 text-black"
                       }`}
                     >
-                      <p className="text-sm font-medium">{message.content}</p>
+                      <p className="text-sm font-medium whitespace-pre-wrap">{message.content}</p>
                     </div>
                     {message.type === "user" && (
                       <div className="w-8 h-8 bg-red-500 border-2 border-black flex items-center justify-center flex-shrink-0">
@@ -325,7 +374,7 @@ export default function AITripPlannerPage() {
                   <Textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="DESCRIBE YOUR DREAM TRIP..."
+                    placeholder="Type your answer here..."
                     className="flex-1 min-h-[60px] border-2 border-black focus:border-red-500 focus:ring-0 resize-none text-black font-medium placeholder:text-gray-500 placeholder:font-bold"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
@@ -333,10 +382,11 @@ export default function AITripPlannerPage() {
                         handleSendMessage()
                       }
                     }}
+                    disabled={isTyping || conversationStage >= questions.length}
                   />
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping}
+                    disabled={!inputMessage.trim() || isTyping || conversationStage >= questions.length}
                     className="bg-red-500 hover:bg-red-600 text-white font-bold border-2 border-black px-6"
                   >
                     <Send className="w-4 h-4" />
@@ -354,7 +404,7 @@ export default function AITripPlannerPage() {
                   <div className="p-6 border-b-2 border-black">
                     <h3 className="text-lg font-black text-black flex items-center gap-2 uppercase">
                       <Sparkles className="w-5 h-5 text-yellow-500" />
-                      Generated Itineraries
+                      Generated Itinerary
                     </h3>
                   </div>
 
@@ -370,7 +420,7 @@ export default function AITripPlannerPage() {
                           <div className="flex items-start justify-between mb-4">
                             <div>
                               <h4 className="text-xl font-black text-black mb-2 uppercase">{itinerary.title}</h4>
-                              <div className="flex items-center gap-4 text-sm text-black font-bold">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-black font-bold">
                                 <div className="flex items-center gap-1">
                                   <MapPin className="w-4 h-4" />
                                   {itinerary.destination}
@@ -429,36 +479,31 @@ export default function AITripPlannerPage() {
 
                           <Tabs defaultValue="full-plan" className="w-full">
                             <TabsList className="grid w-full grid-cols-4 bg-gray-200 border-2 border-black">
-                              <TabsTrigger value="full-plan" className="font-bold">
-                                FULL PLAN
-                              </TabsTrigger>
-                              <TabsTrigger value="travel" className="font-bold">
-                                TRAVEL
-                              </TabsTrigger>
-                              <TabsTrigger value="places" className="font-bold">
-                                PLACES
-                              </TabsTrigger>
-                              <TabsTrigger value="activities" className="font-bold">
-                                ACTIVITIES
-                              </TabsTrigger>
+                              <TabsTrigger value="full-plan" className="font-bold">FULL PLAN</TabsTrigger>
+                              <TabsTrigger value="travel" className="font-bold">TRAVEL</TabsTrigger>
+                              <TabsTrigger value="places" className="font-bold">PLACES</TabsTrigger>
+                              <TabsTrigger value="activities" className="font-bold">DINING</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="full-plan" className="mt-4 space-y-4">
                               {itinerary.days.map((day) => (
                                 <div key={day.day} className="bg-white border-2 border-black p-4">
-                                  <h5 className="font-black text-black mb-2 uppercase">
+                                  <h5 className="font-black text-black mb-3 uppercase">
                                     Day {day.day}: {day.title}
                                   </h5>
-                                  <div className="space-y-2 text-sm text-black">
-                                    <div>
-                                      <strong className="font-bold">ACTIVITIES:</strong> {day.activities.join(", ")}
+                                  <div className="space-y-3 text-sm text-black">
+                                    <div className="flex items-start gap-2">
+                                      <ListChecks className="w-4 h-4 mt-0.5 text-red-600 flex-shrink-0" />
+                                      <div><strong className="font-bold">ACTIVITIES:</strong> {day.activities.join(", ")}</div>
                                     </div>
-                                    <div>
-                                      <strong className="font-bold">MEALS:</strong> {day.meals.join(", ")}
+                                    <div className="flex items-start gap-2">
+                                      <Utensils className="w-4 h-4 mt-0.5 text-red-600 flex-shrink-0" />
+                                      <div><strong className="font-bold">MEALS:</strong> {day.meals.join(", ")}</div>
                                     </div>
                                     {day.accommodation && (
-                                      <div>
-                                        <strong className="font-bold">STAY:</strong> {day.accommodation}
+                                      <div className="flex items-start gap-2">
+                                        <Bed className="w-4 h-4 mt-0.5 text-red-600 flex-shrink-0" />
+                                        <div><strong className="font-bold">STAY:</strong> {day.accommodation}</div>
                                       </div>
                                     )}
                                   </div>
@@ -470,7 +515,8 @@ export default function AITripPlannerPage() {
                               {itinerary.flights.map((flight, index) => (
                                 <div key={index} className="bg-white border-2 border-black p-4">
                                   <div className="flex items-center justify-between">
-                                    <div className="text-sm text-black font-bold">
+                                    <div className="text-sm text-black font-bold flex items-center gap-2">
+                                      <Plane className="w-4 h-4 text-red-600"/>
                                       {flight.departure} → {flight.arrival}
                                     </div>
                                     <div className="bg-yellow-400 border border-black px-2 py-1 text-xs font-bold">
@@ -480,31 +526,27 @@ export default function AITripPlannerPage() {
                                 </div>
                               ))}
                             </TabsContent>
-
+                            
                             <TabsContent value="places" className="mt-4">
-                              <div className="flex flex-wrap gap-2">
-                                {itinerary.places.map((place, index) => (
-                                  <div
-                                    key={index}
-                                    className="bg-white border-2 border-black px-3 py-1 text-sm font-bold"
-                                  >
-                                    {place}
-                                  </div>
-                                ))}
-                              </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {itinerary.places.map((place, index) => (
+                                    <div key={index} className="bg-white border-2 border-black px-3 py-1 text-sm font-bold flex items-center gap-2">
+                                        <Map className="w-4 h-4 text-red-600"/>
+                                        {place}
+                                    </div>
+                                    ))}
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="activities" className="mt-4">
-                              <div className="flex flex-wrap gap-2">
-                                {itinerary.activities.map((activity, index) => (
-                                  <div
-                                    key={index}
-                                    className="bg-white border-2 border-black px-3 py-1 text-sm font-bold"
-                                  >
-                                    {activity}
-                                  </div>
-                                ))}
-                              </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {itinerary.dining.map((item, index) => (
+                                    <div key={index} className="bg-white border-2 border-black px-3 py-1 text-sm font-bold flex items-center gap-2">
+                                        <Utensils className="w-4 h-4 text-red-600"/>
+                                        {item}
+                                    </div>
+                                    ))}
+                                </div>
                             </TabsContent>
                           </Tabs>
                         </div>
@@ -515,8 +557,23 @@ export default function AITripPlannerPage() {
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center">
-                    <Sparkles className="w-16 h-16 text-black mx-auto mb-4" />
-                    <p className="text-black font-bold uppercase">Your AI-generated itineraries will appear here</p>
+                    {isTyping ? (
+                         <div className="text-center">
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                className="w-16 h-16 mx-auto mb-4"
+                            >
+                               <Sparkles className="w-16 h-16 text-black" />
+                            </motion.div>
+                            <p className="text-black font-bold uppercase">Crafting your perfect journey...</p>
+                         </div>
+                    ) : (
+                        <>
+                            <Sparkles className="w-16 h-16 text-black mx-auto mb-4" />
+                            <p className="text-black font-bold uppercase">Your AI-generated itineraries will appear here</p>
+                        </>
+                    )}
                   </div>
                 </div>
               )}
