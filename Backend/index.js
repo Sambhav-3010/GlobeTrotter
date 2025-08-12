@@ -56,6 +56,7 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/api", flightsRouter);
 app.use("/trip", tripRoutes);
+app.use("/newtrip", tripRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
