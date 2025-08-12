@@ -27,7 +27,6 @@ interface TripSelections {
   travel: Selection[]
   hotels: Selection[]
   activities: Selection[]
-  dining: Selection[]
 }
 
 export default function ReviewPage() {
@@ -37,7 +36,6 @@ export default function ReviewPage() {
     travel: [],
     hotels: [],
     activities: [],
-    dining: [],
   })
 
   useEffect(() => {
@@ -45,7 +43,6 @@ export default function ReviewPage() {
     const travelSelections = localStorage.getItem("travel-selections")
     const hotelSelections = localStorage.getItem("hotel-selections")
     const activitySelections = localStorage.getItem("activity-selections")
-    const diningSelections = localStorage.getItem("dining-selections")
 
     if (savedDetails) {
       setTripDetails(JSON.parse(savedDetails))
@@ -56,7 +53,6 @@ export default function ReviewPage() {
       travel: travelSelections ? JSON.parse(travelSelections) : [],
       hotels: hotelSelections ? JSON.parse(hotelSelections) : [],
       activities: activitySelections ? JSON.parse(activitySelections) : [],
-      dining: diningSelections ? JSON.parse(diningSelections) : [],
     }
 
     setSelections(loadedSelections)
@@ -97,7 +93,6 @@ export default function ReviewPage() {
     { id: "travel", title: "TRAVEL", icon: Plane, color: "bg-blue-500", items: selections.travel },
     { id: "hotels", title: "HOTELS", icon: Hotel, color: "bg-green-500", items: selections.hotels },
     { id: "activities", title: "ACTIVITIES", icon: Camera, color: "bg-purple-500", items: selections.activities },
-    { id: "dining", title: "DINING", icon: Utensils, color: "bg-orange-500", items: selections.dining },
   ]
 
   return (

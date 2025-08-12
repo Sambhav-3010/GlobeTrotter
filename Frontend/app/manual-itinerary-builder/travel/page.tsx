@@ -87,8 +87,8 @@ export default function TravelPage() {
         });
 
         const data = await response.json();
-
-        if (response.ok && data?.best_flights) {
+        console.log("Received travel data:", data);
+        if (response.ok && (data?.best_flights || data?.other_flights)) {
           const parsedFlights: TravelItem[] = data.best_flights.map(
             (flight: any, index: number) => {
               const firstSeg = flight.flights[0];
