@@ -65,7 +65,8 @@ router.post("/register", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      sameSite: "none", // Changed to "none" for cross-origin requests
+      secure: true, // Must be true when sameSite is "none"
     });
 
     req.login(user, (err) => {
@@ -118,7 +119,8 @@ router.post("/login", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      sameSite: "none", // Changed to "none" for cross-origin requests
+      secure: true, // Must be true when sameSite is "none"
     });
 
     req.login(user, (err) => {
@@ -154,7 +156,8 @@ router.get(
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      sameSite: "none", // Changed to "none" for cross-origin requests
+      secure: true, // Must be true when sameSite is "none"
     });
 
     // Prepare user data for frontend localStorage

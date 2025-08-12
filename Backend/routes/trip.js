@@ -17,10 +17,14 @@ router.post("/history", protect, async (req, res) => {
       duration_of_visit: trip.duration_of_visit,
       overall_budget: trip.overall_budget,
     })));
-    const updateUser = await User.findByIdAndUpdate(addTrip.map(trip => trip.user_id), {
+    const updateUser = await User.findByIdAndUpdate(req.user._id, {
       $push: {
-        placesVisited: addTrip.map(trip => trip.place_of_visit),
+        placesVisited: { $each: addTrip.map(trip => trip.place_of_visit) }
+      },
+      $set: {
         recentlyVisited: addTrip[addTrip.length - 1]?.place_of_visit || null,
+      },
+      $inc: {
         numberOfTrips: addTrip.length,
       },
     }, { new: true, runValidators: true });
@@ -82,6 +86,7 @@ router.get('/my-trips', protect, async (req, res) => {
 router.get('/:tripId', protect, async (req, res) => {
   try {
     const trip = await New.findById(req.params.tripId);
+    console.log("Fetched trip:", trip);
     if (!trip) {
       return res.status(404).json({ success: false, error: 'Trip not found' });
     }

@@ -111,6 +111,7 @@ export default function ReviewPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          credentials: "include", // Ensure cookies are sent with the request
         }
       );
 
