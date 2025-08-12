@@ -94,11 +94,11 @@ export default function TravelPage() {
               const firstSeg = flight.flights[0];
               const lastSeg = flight.flights[flight.flights.length - 1];
               return {
-                id: `flight-${index}`, // ✅ stable unique ID
+                id: `flight-${index}`,
                 type: "flight",
                 title: `${firstSeg.departure_airport.name} → ${lastSeg.arrival_airport.name}`,
                 description: `${firstSeg.airline} ${firstSeg.flight_number}`,
-                price: `₹${flight.price}`,
+                price: `${flight.price}`,
                 duration: `${flight.total_duration} mins`,
                 departure: firstSeg.departure_airport.name,
                 arrival: lastSeg.arrival_airport.name,

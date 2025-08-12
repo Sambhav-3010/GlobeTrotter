@@ -71,7 +71,7 @@ try {
          return res.status(500).send({ error: "Failed to fetch fare data" });
 });
 
-router.get("/hotels", async (req, res) => {
+router.post("/hotels", async (req, res) => {
   const { q, check_in_date, check_out_date, adults } = req.body;
   try {
     const response = await getJson({
@@ -97,7 +97,7 @@ router.get("/hotels", async (req, res) => {
   }
 });
 
-router.get("/localplaces", async (req, res) => {
+router.post("/localplaces", async (req, res) => {
   const { q, location } = req.body;
   try {
     const response = await getJson({
