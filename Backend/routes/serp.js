@@ -4,7 +4,7 @@ const { getJson } = require("serpapi");
 
 const router = express.Router();
 
-router.get("/flights", async (req, res) => {
+router.post("/flights", async (req, res) => {
   const { departure_id, arrival_id, outbound_date, return_date } = req.body;
   try {
     const response = await getJson({
