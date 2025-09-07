@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useUser } from "../context/UserContext"
 import { useAlert } from "../context/AlertContext"
-// import { auth, googleProvider } from "@/lib/firebase" // Removed Firebase imports
-// import { signInWithPopup } from "firebase/auth" // Removed Firebase imports
+import { auth, googleProvider } from "@/lib/firebase" // Re-import Firebase auth and provider
+import { signInWithPopup } from "firebase/auth" // Re-import Firebase signInWithPopup
 
 export default function AuthPage() {
   const router = useRouter()
@@ -102,11 +102,45 @@ export default function AuthPage() {
     }
   }
 
-  const handleGoogleAuth = () => {
-    // Revert to previous Google Auth redirect or remove if not needed
-    // For now, let's assume we're restoring the old Google OAuth flow if the user wants to keep Google login without Firebase
-    // If completely removing Google login, this function can be removed entirely.
-    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`; // Placeholder for previous Google OAuth redirect
+  const handleGoogleAuth = async () => { // Made async again
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Extract user details from Firebase result
+      const email = user.email || '';
+      const f_name = user.displayName?.split(' ')[0] || '';
+      const l_name = user.displayName?.split(' ').slice(1).join(' ') || '';
+      const profilePhoto = user.photoURL || null;
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/social-login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ f_name, l_name, email, profilePhoto }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        document.cookie = `token=${data.token}; path=/; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}`;
+        showAlert("Google login successful!", "success");
+        // Determine redirect based on user's completion of onboarding
+        if (data.data.user.username && data.data.user.age) { // Adjusting to data.data.user
+          router.push("/dashboard");
+        } else {
+          router.push("/onboarding");
+        }
+      } else {
+        showAlert(data.error || "Google login failed.", "destructive");
+      }
+    } catch (error: any) {
+      showAlert(error.message || "Google authentication failed.", "destructive");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

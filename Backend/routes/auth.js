@@ -2,9 +2,10 @@ const express = require("express");
 // const passport = require("passport"); // Removed
 const User = require("../models/User");
 const protect = require("../middleware/protect"); // Import protect middleware
-const { register, login, googleAuthCallback, createToken } = require("../controllers/authController"); // Import register from authController
+const { register, login, createToken, socialLogin } = require("../controllers/authController"); // Import socialLogin
 const asyncHandler = require("../utils/asyncHandler");
-// const admin = require("../config/firebaseAdmin"); // Removed Firebase admin import
+// Removed Firebase admin import
+// Removed crypto import
 
 const router = express.Router();
 
@@ -31,15 +32,21 @@ router.post(
 
     const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!user || !user.password) {
+    // Modified login logic to handle users without a password (Firebase-created)
+    if (!user) {
       res.status(401);
       throw new Error("Invalid credentials");
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+    if (user.password) { // Only compare password if it exists
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        res.status(401);
+        throw new Error("Invalid credentials");
+      }
+    } else { // User exists but no password (likely Firebase user), cannot login with email/password
       res.status(401);
-      throw new Error("Invalid credentials");
+      throw new Error("This account uses Google Sign-in. Please use 'Continue with Google'.");
     }
 
     const token = createToken(user._id);
@@ -68,6 +75,9 @@ router.post(
   })
 );
 
+// Social Login route
+router.post("/social-login", socialLogin);
+
 // Removed Firebase authentication route
 // router.post("/firebase-login", asyncHandler(async (req, res) => {
 //   const { idToken } = req.body;
@@ -84,13 +94,20 @@ router.post(
 //     let user = await User.findOne({ email });
 
 //     if (!user) {
+//       // Register new user from Firebase info
 //       const f_name = given_name || name.split(' ')[0] || 'User';
 //       const l_name = family_name || name.split(' ').slice(1).join(' ') || '';
+
+//       // Generate a random password for Firebase-authenticated users
+//       const randomPassword = crypto.randomBytes(16).toString('hex');
+//       const hashedPassword = await bcrypt.hash(randomPassword, 12);
 
 //       user = new User({
 //         email,
 //         f_name,
 //         l_name,
+//         password: hashedPassword, // Store a random hashed password
+//         // Other optional fields can be set to null or default initially
 //         username: null,
 //         age: null,
 //         city: null,
@@ -101,6 +118,7 @@ router.post(
 //       await user.save();
 //     }
 
+//     // Generate and set application's JWT
 //     const token = createToken(user._id);
 //     res.cookie("token", token, {
 //       httpOnly: true,

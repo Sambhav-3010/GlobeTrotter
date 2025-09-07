@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const asyncHandler = require("../utils/asyncHandler");
+const crypto = require('crypto'); // Moved crypto import to top
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -94,4 +95,48 @@ const login = asyncHandler(async (req, res) => {
     res.json({ success: true, message: 'Login successful', data: { user, token } });
 });
 
-module.exports = { register, login, createToken };
+const socialLogin = asyncHandler(async (req, res) => {
+  const { f_name, l_name, email } = req.body;
+
+  if (!f_name || !l_name || !email) {
+    res.status(400);
+    throw new Error('First name, last name, and email are required for social login.');
+  }
+
+  const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+  if (!emailRegex.test(email)) {
+    res.status(400);
+    throw new Error('Invalid email format');
+  }
+
+  let user = await User.findOne({ email: email.toLowerCase() });
+
+  if (!user) {
+    // Register new user with a random password
+    const randomPassword = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(randomPassword, 12);
+
+    user = await User.create({
+      f_name: f_name.trim(),
+      l_name: l_name.trim(),
+      email: email.toLowerCase(),
+      password: hashedPassword, // Store a random hashed password
+      // Other optional fields can be set to null or default initially
+      username: null,
+      age: null,
+      city: null,
+      country: null,
+      phoneNumber: null,
+    });
+  }
+
+  const token = createToken(user._id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Social login successful',
+    data: { user, token }
+  });
+});
+
+module.exports = { register, login, createToken, socialLogin };

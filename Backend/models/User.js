@@ -43,7 +43,7 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
-      required: true, // Reverted to true as Firebase integration is being removed
+      required: false, // Set to false to accommodate Firebase-authenticated users
     },
     numberOfTrips: {
       type: Number,
