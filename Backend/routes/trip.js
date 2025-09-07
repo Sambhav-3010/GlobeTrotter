@@ -3,12 +3,42 @@ const User = require("../models/User");
 const Trip = require("../models/Trip");
 const router = express.Router();
 const protect = require("../middleware/protect");
-const New = require('../models/New');
+const asyncHandler = require("../utils/asyncHandler");
 
-router.post("/history", protect, async (req, res) => {
-  const { tripDetails } = req.body;
+router.post(
+  "/history",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { tripDetails } = req.body;
 
-  try {
+    if (!Array.isArray(tripDetails) || tripDetails.length === 0) {
+      res.status(400);
+      throw new Error("tripDetails must be a non-empty array");
+    }
+
+    for (const trip of tripDetails) {
+      if (!trip.place_of_visit || typeof trip.place_of_visit !== 'string') {
+        res.status(400);
+        throw new Error("Each trip must have a valid place_of_visit (string)");
+      }
+      if (!trip.start_date || typeof trip.start_date !== 'string' || !Date.parse(trip.start_date)) {
+        res.status(400);
+        throw new Error("Each trip must have a valid start_date (date string)");
+      }
+      if (!trip.end_date || typeof trip.end_date !== 'string' || !Date.parse(trip.end_date)) {
+        res.status(400);
+        throw new Error("Each trip must have a valid end_date (date string)");
+      }
+      if (typeof trip.duration_of_visit !== 'number' || trip.duration_of_visit <= 0) {
+        res.status(400);
+        throw new Error("Each trip must have a valid duration_of_visit (positive number)");
+      }
+      if (typeof trip.overall_budget !== 'number' || trip.overall_budget <= 0) {
+        res.status(400);
+        throw new Error("Each trip must have a valid overall_budget (positive number)");
+      }
+    }
+
     const addTrip = await Trip.create(tripDetails.map((trip) => ({
       user_id: req.user._id,
       place_of_visit: trip.place_of_visit,
@@ -30,18 +60,18 @@ router.post("/history", protect, async (req, res) => {
     }, { new: true, runValidators: true });
 
     if (!updateUser) {
-      return res.status(404).json({ error: "User not found" });
+      res.status(404);
+      throw new Error("User not found");
     }
 
     res.status(200).json(addTrip);
-  } catch (error) {
-    console.error("Error updating trip history:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+  })
+);
 
-router.post('/', protect, async (req, res) => {
-  try {
+router.post(
+  '/',
+  protect,
+  asyncHandler(async (req, res) => {
     const {
       place_of_visit,
       start_date,
@@ -53,7 +83,47 @@ router.post('/', protect, async (req, res) => {
       hotels,
       activities
     } = req.body;
-    const trip = await New.create({
+
+    // Input validation for creating a new trip
+    if (!place_of_visit || typeof place_of_visit !== 'string') {
+      res.status(400);
+      throw new Error('place_of_visit (string) is required.');
+    }
+    if (!start_date || typeof start_date !== 'string' || !Date.parse(start_date)) {
+      res.status(400);
+      throw new Error('start_date (date string) is required and must be valid.');
+    }
+    if (!end_date || typeof end_date !== 'string' || !Date.parse(end_date)) {
+      res.status(400);
+      throw new Error('end_date (date string) is required and must be valid.');
+    }
+    if (typeof duration_of_visit !== 'number' || duration_of_visit <= 0) {
+      res.status(400);
+      throw new Error('duration_of_visit (positive number) is required.');
+    }
+    if (typeof overall_budget !== 'number' || overall_budget <= 0) {
+      res.status(400);
+      throw new Error('overall_budget (positive number) is required.');
+    }
+    if (typeof total_spent !== 'number' || total_spent < 0) {
+      res.status(400);
+      throw new Error('total_spent (non-negative number) is required.');
+    }
+    // Optional array fields validation
+    if (travel && !Array.isArray(travel)) {
+      res.status(400);
+      throw new Error('travel must be an array if provided.');
+    }
+    if (hotels && !Array.isArray(hotels)) {
+      res.status(400);
+      throw new Error('hotels must be an array if provided.');
+    }
+    if (activities && !Array.isArray(activities)) {
+      res.status(400);
+      throw new Error('activities must be an array if provided.');
+    }
+
+    const trip = await Trip.create({
       user_id: req.user._id,
       place_of_visit,
       start_date,
@@ -67,42 +137,36 @@ router.post('/', protect, async (req, res) => {
     });
 
     res.status(201).json({ success: true, trip });
-  } catch (err) {
-    console.error("Error creating trip:", err);
-    res.status(500).json({ success: false, error: 'Failed to save trip' });
-  }
-});
+  })
+);
 
-router.get('/my-trips', protect, async (req, res) => {
-  try {
-    const trips = await New.find({ user_id: req.user._id }).sort({ start_date: -1 });
+router.get(
+  '/my-trips',
+  protect,
+  asyncHandler(async (req, res) => {
+    const trips = await Trip.find({ user_id: req.user._id }).sort({ start_date: -1 });
     res.json({ success: true, trips });
-  } catch (err) {
-    console.error("Error fetching user's trips:", err);
-    res.status(500).json({ success: false, error: 'Failed to fetch trips' });
-  }
-});
+  })
+);
 
-router.get('/:tripId', protect, async (req, res) => {
-  try {
-    const trip = await New.findById(req.params.tripId);
+router.get(
+  '/:tripId',
+  protect,
+  asyncHandler(async (req, res) => {
+    const trip = await Trip.findById(req.params.tripId);
     console.log("Fetched trip:", trip);
     if (!trip) {
-      return res.status(404).json({ success: false, error: 'Trip not found' });
+      res.status(404);
+      throw new Error('Trip not found');
     }
 
     if (trip.user_id.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, error: 'Unauthorized: You do not have access to this trip' });
+      res.status(403);
+      throw new Error('Unauthorized: You do not have access to this trip');
     }
 
     res.json({ success: true, trip });
-  } catch (err) {
-    console.error("Error fetching trip details:", err);
-    if (err.kind === 'ObjectId') {
-        return res.status(404).json({ success: false, error: 'Trip not found' });
-    }
-    res.status(500).json({ success: false, error: 'Failed to fetch trip details' });
-  }
-});
+  })
+);
 
 module.exports = router;

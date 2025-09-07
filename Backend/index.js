@@ -11,6 +11,7 @@ const tripRoutes = require("./routes/trip");
 const flightsRouter = require("./routes/serp");
 const cors = require("cors");
 const geminiRoutes = require('./routes/gemini');
+const errorHandler = require('./middleware/errorMiddleware');
 
 const app = express();
 
@@ -59,6 +60,9 @@ app.use("/api", flightsRouter);
 app.use("/trip", tripRoutes);
 app.use('/api', geminiRoutes); 
 app.use("/newtrip", tripRoutes);
+
+// Error handling middleware
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));

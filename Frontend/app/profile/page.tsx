@@ -39,7 +39,6 @@ export default function ProfilePage() {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ id: user._id }),
           }
         );
 

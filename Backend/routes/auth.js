@@ -1,97 +1,20 @@
 const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const User = require("../models/User");
+const protect = require("../middleware/protect"); // Import protect middleware
+const { register, login, googleAuthCallback, createToken } = require("../controllers/authController"); // Import register from authController
+const asyncHandler = require("../utils/asyncHandler");
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+// Removed the local createToken function
 
-const createToken = (userId) => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-};
+// Use the register function from authController
+router.post("/register", register);
 
-router.post("/register", async (req, res) => {
-  try {
-    if (req.user) {
-      const token = createToken(req.user._id);
-      return res
-        .status(200)
-        .json({ message: "Already authenticated", user: req.user, token });
-    }
-
-    const {
-      f_name,
-      l_name,
-      email,
-      password,
-      age,
-      city,
-      country,
-      phoneNumber,
-      username,
-    } = req.body;
-
-    if (!f_name || !l_name || !email || !password) {
-      return res
-        .status(400)
-        .json({ message: "f_name, l_name, email, and password are required" });
-    }
-
-    const existingUserByEmail = await User.findOne({ email: email });
-    if (existingUserByEmail)
-      return res
-        .status(400)
-        .json({ message: "User with this email already exists" });
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    const user = await User.create({
-      f_name,
-      l_name,
-      username,
-      email: email.toLowerCase(),
-      password: hashedPassword,
-      age,
-      city,
-      country,
-      phoneNumber,
-    });
-
-    const token = createToken(user._id);
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "none", // Changed to "none" for cross-origin requests
-      secure: true, // Must be true when sameSite is "none"
-    });
-
-    req.login(user, (err) => {
-      if (err) console.error(err);
-      return res.status(201).json({
-        message: "User registered",
-        user: {
-          id: user._id,
-          f_name: user.f_name,
-          l_name: user.l_name,
-          username: user.username,
-          email: user.email,
-          city: user.city,
-        },
-        token,
-      });
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Registration error", error: err.message });
-  }
-});
-
-router.post("/login", async (req, res) => {
-  try {
+router.post(
+  "/login",
+  asyncHandler(async (req, res) => {
     if (req.user) {
       const token = createToken(req.user._id);
       return res
@@ -100,19 +23,23 @@ router.post("/login", async (req, res) => {
     }
 
     const { email, password } = req.body;
-    if (!email || !password)
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+    if (!email || !password) {
+      res.status(400);
+      throw new Error("Email and password are required");
+    }
 
     const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!user || !user.password)
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (!user || !user.password) {
+      res.status(401);
+      throw new Error("Invalid credentials");
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (!isMatch) {
+      res.status(401);
+      throw new Error("Invalid credentials");
+    }
 
     const token = createToken(user._id);
 
@@ -132,16 +59,13 @@ router.post("/login", async (req, res) => {
           f_name: req.user.f_name,
           username: req.user.username,
           age: req.user.age,
-          city: req.user.city,
+          city: user.city,
         },
         token,
       });
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Login error", error: err.message });
-  }
-});
+  })
+);
 
 router.get(
   "/google",
@@ -152,28 +76,17 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/", session: true }),
   (req, res) => {
+    // This callback is hit after successful authentication with Google.
+    // We are now handling token creation and cookie setting here, 
+    // and then redirecting to the frontend.
     const token = createToken(req.user._id);
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "none", // Changed to "none" for cross-origin requests
-      secure: true, // Must be true when sameSite is "none"
+      sameSite: "none",
+      secure: true,
     });
-
-    // Prepare user data for frontend localStorage
-    const userData = {
-      id: req.user._id,
-      f_name: req.user.f_name,
-      username: req.user.username,
-      age: req.user.age,
-    };
-
-    // Redirect to a specific frontend callback route with token and user data
-    const redirectUrl = `${
-      process.env.FRONTEND_URL
-    }/auth/google/callback?token=${token}&user=${encodeURIComponent(
-      JSON.stringify(userData)
-    )}`;
+    const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback`;
     res.redirect(redirectUrl);
   }
 );
@@ -185,15 +98,16 @@ router.get("/logout", (req, res) => {
   });
 });
 
-router.post("/me", async (req, res) => {
-  try {
-    const { id } = req.body;
-    const user = await User.findById(id).select(
+router.post(
+  "/me",
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select(
       "f_name l_name phoneNumber city age recentlyVisited placesVisited email numberOfTrips"
     );
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      res.status(404);
+      throw new Error("User not found");
     }
 
     res.json({
@@ -207,66 +121,50 @@ router.post("/me", async (req, res) => {
       recentlyVisited: user.recentlyVisited,
       placesVisited: user.placesVisited,
     });
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+  })
+);
 
-// Middleware to protect routes
-const protect = (req, res, next) => {
-  // Check if user is authenticated (e.g., via passport session or token)
-  if (req.isAuthenticated()) {
-    return next();
-  }
+// No longer defining 'protect' middleware here. It's imported from Backend/middleware/protect.js
 
-  // If not authenticated, check for token in headers (for API calls)
-  const token = req.headers.authorization?.split(" ")[1];
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      User.findById(decoded.userId)
-        .then((user) => {
-          if (!user) {
-            return res
-              .status(401)
-              .json({ message: "Not authorized, token failed" });
-          }
-          req.user = user;
-          next();
-        })
-        .catch((err) =>
-          res.status(401).json({
-            message: "Not authorized, token failed",
-            error: err.message,
-          })
-        );
-    } catch (error) {
-      res.status(401).json({
-        message: "Not authorized, token failed",
-        error: error.message,
-      });
-    }
-  } else {
-    res.status(401).json({ message: "Not authorized, no token" });
-  }
-};
-
-router.put("/users/:id", protect, async (req, res) => {
-  try {
+router.put(
+  "/users/:id",
+  protect,
+  asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { username, age, city, phoneNumber, gender } = req.body;
 
+    // Input validation for update fields
+    if (username && (typeof username !== 'string' || username.trim().length < 3)) {
+      res.status(400);
+      throw new Error('Username must be a string of at least 3 characters.');
+    }
+    if (age !== undefined && (typeof age !== 'number' || age < 10 || age > 100)) {
+      res.status(400);
+      throw new Error('Age must be a number between 10 and 100.');
+    }
+    if (city && (typeof city !== 'string' || city.trim().length < 2)) {
+      res.status(400);
+      throw new Error('City must be a string of at least 2 characters.');
+    }
+    if (phoneNumber && (typeof phoneNumber !== 'string' || !/^[0-9]{10}$/.test(phoneNumber))) {
+      res.status(400);
+      throw new Error('Phone number must be a 10-digit string.');
+    }
+    if (gender && (typeof gender !== 'string' || !['male', 'female', 'other'].includes(gender.toLowerCase()))) {
+      res.status(400);
+      throw new Error('Gender must be one of \'male\', \'female\', or \'other\'.');
+    }
+
     if (req.user._id.toString() !== id) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this user profile" });
+      res.status(403);
+      throw new Error("Not authorized to update this user profile");
     }
 
     const user = await User.findById(id);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      res.status(404);
+      throw new Error("User not found");
     }
 
     if (username && username !== user.username) {
@@ -275,7 +173,8 @@ router.put("/users/:id", protect, async (req, res) => {
         existingUserByUsername &&
         existingUserByUsername._id.toString() !== id
       ) {
-        return res.status(400).json({ message: "Username not available" });
+        res.status(400);
+        throw new Error("Username not available");
       }
       user.username = username;
     }
@@ -289,12 +188,7 @@ router.put("/users/:id", protect, async (req, res) => {
     const updatedUser = await user.save();
 
     res.json({ message: "Profile updated successfully", user: updatedUser });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ message: "Profile update failed", error: err.message });
-  }
-});
+  })
+);
 
 module.exports = router;
