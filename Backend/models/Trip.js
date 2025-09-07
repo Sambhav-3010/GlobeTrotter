@@ -29,9 +29,25 @@ const tripSchema = new Schema({
         type: Number,
         required: true,
         min: 0
+    },
+    total_spent: {
+        type: Number,
+        default: 0
+    },
+    travel: {
+        type: [Object],
+        default: []
+    },
+    hotels: {
+        type: [Object],
+        default: []
+    },
+    activities: {
+        type: [Object],
+        default: []
     }
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model('New', tripSchema);
+module.exports = mongoose.models.New || mongoose.model('New', tripSchema);
