@@ -1,10 +1,6 @@
 require("dotenv").config();
-require("./config/passport");
 const express = require("express");
 const mongoose = require("mongoose");
-const session = require("express-session");
-const MongoStore = require("connect-mongo");
-const passport = require("passport");
 const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/auth");
 const tripRoutes = require("./routes/trip");
@@ -30,30 +26,8 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI,
-      collectionName: "sessions",
-    }),
-    cookie: {
-      httpOnly: true,
-      sameSite: "none", // Changed to "none" for cross-origin requests
-      secure: true, // Must be true when sameSite is "none"
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    },
-  })
-);
-
-app.use(passport.initialize());
-app.use(passport.session());
-
 app.get("/", (req, res) => {
-  res.send(`<html><body><h1>Welcome to GlobeTrotter API</h1>
-        <button onclick="window.location.href='${process.env.BACKEND_URL}/auth/google'">Login with Google</button></body></html>`);
+  res.send(`<html><body><h1>Welcome to GlobeTrotter API</h1></body></html>`);
 });
 app.use("/auth", authRoutes);
 app.use("/api", flightsRouter);

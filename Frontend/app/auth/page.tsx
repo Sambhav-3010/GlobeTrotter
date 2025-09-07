@@ -8,12 +8,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
-import { toast } from "sonner"
 import { useUser } from "../context/UserContext"
+import { useAlert } from "../context/AlertContext"
+// import { auth, googleProvider } from "@/lib/firebase" // Removed Firebase imports
+// import { signInWithPopup } from "firebase/auth" // Removed Firebase imports
 
 export default function AuthPage() {
   const router = useRouter()
   const { setUser } = useUser()
+  const { showAlert } = useAlert();
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
@@ -21,30 +24,33 @@ export default function AuthPage() {
   const [f_name, setF_name] = useState("")
   const [l_name, setL_name] = useState("")
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<{ [key: string]: string }>({})
+  // const [errors, setErrors] = useState<{ [key: string]: string }>({}) // Removed errors state
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {}
+    const newErrors: string[] = []
 
     if (!email) {
-      newErrors.email = "Email is required"
+      newErrors.push("Email is required")
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email"
+      newErrors.push("Please enter a valid email")
     }
 
     if (!password) {
-      newErrors.password = "Password is required"
+      newErrors.push("Password is required")
     } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
+      newErrors.push("Password must be at least 6 characters")
     }
 
     if (!isLogin) {
-      if (!f_name) newErrors.f_name = "First name is required"
-      if (!l_name) newErrors.l_name = "Last name is required"
+      if (!f_name) newErrors.push("First name is required")
+      if (!l_name) newErrors.push("Last name is required")
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    if (newErrors.length > 0) {
+      showAlert(newErrors.join("\n"), "destructive", "Validation Error");
+      return false;
+    }
+    return true;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,7 +60,7 @@ export default function AuthPage() {
     }
 
     setLoading(true)
-    setErrors({})
+    // setErrors({}) // Removed
 
     try {
       let response
@@ -77,36 +83,30 @@ export default function AuthPage() {
       }
 
       const data = await response.json()
-      console.log("Response data:", data)
 
       if (response.ok) {
         document.cookie = `token=${data.token}; path=/; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}`;
-        localStorage.setItem("user", JSON.stringify(data.user))
-        toast.success(data.message)
+        showAlert(data.error, "success")
         if (isLogin) {
           router.push("/dashboard")
         } else {
-          localStorage.setItem("f_name", data.user.f_name);
-          localStorage.setItem("l_name", data.user.l_name);
-          localStorage.setItem("email", data.user.email);
-          setUser(data.user);
           router.push("/onboarding")
         }
       } else {
-        setErrors({ api: data.message || "An unexpected error occurred." })
-        toast.error(data.message || "An unexpected error occurred.")
+        showAlert(data.error || "An unexpected error occurred.", "destructive")
       }
     } catch (error: any) {
-      setErrors({ api: error.message || "Network error. Please try again." })
-      toast.error(error.message || "Network error. Please try again.")
+      showAlert(error.message || "Network error. Please try again.", "destructive")
     } finally {
       setLoading(false)
     }
   }
 
   const handleGoogleAuth = () => {
-    // Redirect to backend for Google OAuth
-    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`;
+    // Revert to previous Google Auth redirect or remove if not needed
+    // For now, let's assume we're restoring the old Google OAuth flow if the user wants to keep Google login without Firebase
+    // If completely removing Google login, this function can be removed entirely.
+    window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`; // Placeholder for previous Google OAuth redirect
   }
 
   return (
@@ -150,7 +150,7 @@ export default function AuthPage() {
               <button
                 onClick={() => {
                   setIsLogin(true)
-                  setErrors({})
+                  // setErrors({}) // Removed
                 }}
                 className={`flex-1 py-3 text-center font-bold text-lg transition-colors ${
                   isLogin ? "text-black border-b-4 border-black" : "text-gray-500 hover:text-gray-700"
@@ -161,7 +161,7 @@ export default function AuthPage() {
               <button
                 onClick={() => {
                   setIsLogin(false)
-                  setErrors({})
+                  // setErrors({}) // Removed
                 }}
                 className={`flex-1 py-3 text-center font-bold text-lg transition-colors ${
                   !isLogin ? "text-black border-b-4 border-black" : "text-gray-500 hover:text-gray-700"
@@ -188,7 +188,7 @@ export default function AuthPage() {
                         placeholder="Enter your first name"
                       />
                     </div>
-                    {errors.f_name && <p className="text-red-600 text-sm mt-1 font-medium">{errors.f_name}</p>}
+                    {/* {errors.f_name && <p className="text-red-600 text-sm mt-1 font-medium">{errors.f_name}</p>} */}
                   </div>
                   <div>
                     <Label htmlFor="l_name" className="text-black font-bold text-sm uppercase tracking-wide">
@@ -204,7 +204,7 @@ export default function AuthPage() {
                         placeholder="Enter your last name"
                       />
                     </div>
-                    {errors.l_name && <p className="text-red-600 text-sm mt-1 font-medium">{errors.l_name}</p>}
+                    {/* {errors.l_name && <p className="text-red-600 text-sm mt-1 font-medium">{errors.l_name}</p>} */}
                   </div>
                 </>
               )}
@@ -223,7 +223,7 @@ export default function AuthPage() {
                     placeholder="Enter your email"
                   />
                 </div>
-                {errors.email && <p className="text-red-600 text-sm mt-1 font-medium">{errors.email}</p>}
+                {/* {errors.email && <p className="text-red-600 text-sm mt-1 font-medium">{errors.email}</p>} */}
               </div>
 
               <div>
@@ -248,10 +248,10 @@ export default function AuthPage() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {errors.password && <p className="text-red-600 text-sm mt-1 font-medium">{errors.password}</p>}
+                {/* {errors.password && <p className="text-red-600 text-sm mt-1 font-medium">{errors.password}</p>} */}
               </div>
 
-              {errors.api && <p className="text-red-600 text-sm mt-1 font-medium text-center">{errors.api}</p>}
+              {/* {errors.api && <p className="text-red-600 text-sm mt-1 font-medium text-center">{errors.api}</p>} */}
 
               <Button
                 type="submit"

@@ -19,43 +19,73 @@ interface User {
 
 interface UserContextType {
   user: User | null;
-  setUser: (user: User | null) => void;
+  setUser: (user: User | null) => void; // This will trigger a re-fetch of user data
   loading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Helper to get cookie value
+const getCookie = (name: string) => {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return null;
+};
+
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUserState(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to parse user from localStorage:", error);
-        localStorage.removeItem('user');
+  const fetchUserData = async (token: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserState(data.user);
+      } else {
+        console.error("Failed to fetch user data with token:", response.status, await response.json());
+        setUserState(null);
+        // Clear invalid token
+        if (typeof document !== 'undefined') {
+          document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+        }
       }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setUserState(null);
+      // Clear token on network error
+      if (typeof document !== 'undefined') {
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  useEffect(() => {
+    const token = getCookie('token');
+    if (token) {
+      fetchUserData(token);
+    } else {
+      setUserState(null);
+      setLoading(false);
+    }
   }, []);
 
   const setUser = (userData: User | null) => {
-    setUserState(userData);
-    const userSavedData = {
-      _id: userData?._id,
-      email: userData?.email,
-      f_name: userData?.f_name,
-      l_name: userData?.l_name,
-      username: userData?.username,
-      city: userData?.city,
-    };
-    if (userData) {
-      localStorage.setItem('user', JSON.stringify(userSavedData));
-    } else {
-      localStorage.removeItem('user');
+    setUserState(userData); // Update local state directly
+    if (!userData) {
+      // Clear token cookie if user data is set to null (e.g., logout)
+      if (typeof document !== 'undefined') {
+        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      }
     }
   };
 

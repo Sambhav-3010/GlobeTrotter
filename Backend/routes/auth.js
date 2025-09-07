@@ -1,9 +1,10 @@
 const express = require("express");
-const passport = require("passport");
+// const passport = require("passport"); // Removed
 const User = require("../models/User");
 const protect = require("../middleware/protect"); // Import protect middleware
 const { register, login, googleAuthCallback, createToken } = require("../controllers/authController"); // Import register from authController
 const asyncHandler = require("../utils/asyncHandler");
+// const admin = require("../config/firebaseAdmin"); // Removed Firebase admin import
 
 const router = express.Router();
 
@@ -50,56 +51,119 @@ router.post(
       secure: true, // Must be true when sameSite is "none"
     });
 
-    req.login(user, (err) => {
-      if (err) console.error(err);
-      return res.json({
+    // req.login(user, (err) => { // Removed Passport.js login
+    //   if (err) console.error(err);
+    return res.json({
         message: "Login successful",
         user: {
-          id: req.user._id,
-          f_name: req.user.f_name,
-          username: req.user.username,
-          age: req.user.age,
+          id: user._id,
+          f_name: user.f_name,
+          username: user.username,
+          age: user.age,
           city: user.city,
         },
         token,
       });
-    });
+    // }); // Removed Passport.js login
   })
 );
 
-router.get(
-  "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
+// Removed Firebase authentication route
+// router.post("/firebase-login", asyncHandler(async (req, res) => {
+//   const { idToken } = req.body;
 
-router.get(
-  "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/", session: true }),
-  (req, res) => {
-    // This callback is hit after successful authentication with Google.
-    // We are now handling token creation and cookie setting here, 
-    // and then redirecting to the frontend.
-    const token = createToken(req.user._id);
-    res.cookie("token", token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "none",
-      secure: true,
-    });
-    const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback`;
-    res.redirect(redirectUrl);
-  }
-);
+//   if (!idToken) {
+//     res.status(400);
+//     throw new Error("Firebase ID token is required");
+//   }
+
+//   try {
+//     const decodedToken = await admin.auth().verifyIdToken(idToken);
+//     const { email, name, picture, family_name, given_name } = decodedToken;
+
+//     let user = await User.findOne({ email });
+
+//     if (!user) {
+//       const f_name = given_name || name.split(' ')[0] || 'User';
+//       const l_name = family_name || name.split(' ').slice(1).join(' ') || '';
+
+//       user = new User({
+//         email,
+//         f_name,
+//         l_name,
+//         username: null,
+//         age: null,
+//         city: null,
+//         country: null,
+//         phoneNumber: null,
+//         profilePhoto: picture || null,
+//       });
+//       await user.save();
+//     }
+
+//     const token = createToken(user._id);
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       maxAge: 7 * 24 * 60 * 60 * 1000,
+//       sameSite: "none",
+//       secure: true,
+//     });
+
+//     res.status(200).json({
+//       message: "Firebase login successful",
+//       user: {
+//         id: user._id,
+//         f_name: user.f_name,
+//         l_name: user.l_name,
+//         email: user.email,
+//         username: user.username,
+//         age: user.age,
+//         city: user.city,
+//         country: user.country,
+//         phoneNumber: user.phoneNumber,
+//         profilePhoto: user.profilePhoto,
+//       },
+//       token,
+//     });
+
+//   } catch (error) {
+//     res.status(401);
+//     throw new Error(`Firebase authentication failed: ${error.message}`);
+//   }
+// }));
+
+// Removed Google OAuth routes
+// router.get(
+//   "/google",
+//   passport.authenticate("google", { scope: ["profile", "email"] })
+// );
+
+// router.get(
+//   "/google/callback",
+//   passport.authenticate("google", { failureRedirect: "/", session: true }),
+//   (req, res) => {
+//     const token = createToken(req.user._id);
+//     res.cookie("token", token, {
+//       httpOnly: true,
+//       maxAge: 7 * 24 * 60 * 60 * 1000,
+//       sameSite: "none",
+//       secure: true,
+//     });
+//     const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback`;
+//     res.redirect(redirectUrl);
+//   }
+// );
 
 router.get("/logout", (req, res) => {
-  req.logout(() => {
+  // req.logout(() => { // Removed Passport.js logout
     res.clearCookie("token");
     res.redirect(process.env.FRONTEND_URL || "/");
-  });
+  // }); // Removed Passport.js logout
 });
 
 router.post(
   "/me",
+  protect,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select(
       "f_name l_name phoneNumber city age recentlyVisited placesVisited email numberOfTrips"

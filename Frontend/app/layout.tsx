@@ -5,6 +5,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/app/providers/theme-provider" // Use the custom ThemeProvider
 import { Toaster } from "@/components/ui/toaster"
 import { UserProvider } from "./context/UserContext"
+import { AlertProvider } from "./context/AlertContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -24,7 +25,9 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <UserProvider>
-            {children}
+            <AlertProvider>
+              {children}
+            </AlertProvider>
             <Toaster />
           </UserProvider>
         </body>
