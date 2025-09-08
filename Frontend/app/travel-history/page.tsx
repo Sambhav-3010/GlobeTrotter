@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useUser } from "../context/UserContext"; // Import useUser
+import { useAlert } from "../context/AlertContext"; // Import useAlert
 import Cookies from "js-cookie"; // Import Cookies
 
 const indianCities = [
@@ -123,21 +124,20 @@ const countries = [
 ];
 
 type TripDetails = {
-  place_of_visit: string;
+  place_of_visit: string[]; // Can be multiple places for a single trip entry
   start_date: string;
   end_date: string;
-  duration_of_visit: number;
   overall_budget: number;
 };
 
 export default function TravelHistoryPage() {
   const router = useRouter();
   const { user, setUser } = useUser(); // Get user and setUser from context
-  const [selectedTrips, setSelectedTrips] = useState<string[]>([]); // Change to string[]
+  const { showAlert } = useAlert(); // Get showAlert from context
+  const [trips, setTrips] = useState<TripDetails[]>([]);
   const [citySearch, setCitySearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
 
-  // Redirect if no profile or no token
   useEffect(() => {
     if (!user && !Cookies.get("token")) {
       router.push("/auth");
@@ -160,109 +160,93 @@ export default function TravelHistoryPage() {
     [countrySearch]
   );
 
-  const totalTrips = selectedTrips.length;
+  const totalTrips = trips.length;
 
-  // Toggle selection
-  const togglePlace = (place: string) => {
-    setSelectedTrips((prev) => {
-      if (prev.includes(place)) {
-        return prev.filter((p) => p !== place);
-      } else {
-        return [...prev, place];
-      }
-    });
+  const addTrip = (place: string) => {
+    setTrips((prev) => [
+      ...prev,
+      {
+        place_of_visit: [place],
+        start_date: "",
+        end_date: "",
+        overall_budget: 0,
+      },
+    ]);
   };
 
-  // Update details for a selected place (This function will be removed or repurposed if not needed)
-  const updateTripDetails = (
-    place: string,
-    field: keyof TripDetails,
-    value: any
-  ) => {
-    // This function might become obsolete if we only store place names
+  const removeTrip = (index: number) => {
+    setTrips((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const removePlace = (place: string) => {
-    setSelectedTrips((prev) => prev.filter((p) => p !== place));
+  const updateTripField = (index: number, field: keyof TripDetails, value: any) => {
+    setTrips((prev) =>
+      prev.map((trip, i) =>
+        i === index ? { ...trip, [field]: value } : trip
+      )
+    );
   };
 
   const handleContinue = async () => {
-    const token = Cookies.get("token");
     const userId = user?._id;
-
-    if (!token || !userId) {
-      console.error("Authentication token or user ID missing.");
-      // Use showAlert here if you have it in this component's context
-      alert("Authentication required. Please log in again.");
+    if (!userId) {
+      showAlert("Authentication required. Please log in again.", "destructive");
       router.push("/auth");
+      return;
+    }
+
+    const isValid = trips.every(trip => {
+      if (!trip.place_of_visit.length) {
+        showAlert("Each trip must have at least one place of visit.", "destructive");
+        return false;
+      }
+      if (!trip.start_date || !trip.end_date) {
+        showAlert("Please provide both start and end dates for all trips.", "destructive");
+        return false;
+      }
+      if (new Date(trip.start_date) > new Date(trip.end_date)) {
+        showAlert("Start date cannot be after end date for a trip.", "destructive");
+        return false;
+      }
+      if (trip.overall_budget < 0) {
+        showAlert("Budget cannot be negative.", "destructive");
+        return false;
+      }
+      return true;
+    });
+
+    if (!isValid) {
       return;
     }
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/past-travels`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/travelhistory/`,
         {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           credentials: "include",
-          body: JSON.stringify({ placesVisited: selectedTrips }), // Send only placesVisited
+          body: JSON.stringify({ trips }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error("Error from server:", response.status, errorData);
-        alert(`Failed to save travel history: ${response.status}`);
+        showAlert(
+          `Failed to save travel history: ${errorData.message || response.statusText}`,
+          "destructive"
+        );
         return;
       }
 
-      const result = await response.json();
-      setUser(result.user); // Update user context with updated data
+      showAlert("Travel history saved successfully!", "success");
+      localStorage.removeItem('travelHistoryRequired'); // Clear the flag after successful submission
       router.push("/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Network error sending travel history:", err);
-      alert("Network error. Please try again.");
-    }
-  };
-
-  const handleSkip = async () => {
-    const token = Cookies.get("token");
-    const userId = user?._id;
-
-    if (!token || !userId) {
-      console.error("Authentication token or user ID missing.");
-      alert("Authentication required. Please log in again.");
-      router.push("/auth");
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/past-travels`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ placesVisited: [] }), // Send empty array for skip
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Error from server:", response.status, errorData);
-        alert(`Failed to skip travel history: ${response.status}`);
-        return;
-      }
-      const result = await response.json();
-      setUser(result.user); // Update user context
-      router.push("/dashboard");
-    } catch (err) {
-      console.error("Network error skipping travel history:", err);
-      alert("Network error. Please try again.");
+      showAlert(err.message || "Network error. Please try again.", "destructive");
     }
   };
 
@@ -333,9 +317,9 @@ export default function TravelHistoryPage() {
                 {filteredCities.map((city) => (
                   <motion.button
                     key={city}
-                    onClick={() => togglePlace(city)}
+                    onClick={() => addTrip(city)} // Use addTrip
                     className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
-                      selectedTrips.includes(city)
+                      trips.some(t => t.place_of_visit.includes(city)) // Check if city is in any trip
                         ? "bg-yellow-400"
                         : "bg-white"
                     }`}
@@ -367,9 +351,9 @@ export default function TravelHistoryPage() {
                 {filteredCountries.map((country) => (
                   <motion.button
                     key={country}
-                    onClick={() => togglePlace(country)}
+                    onClick={() => addTrip(country)} // Use addTrip
                     className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
-                      selectedTrips.includes(country)
+                      trips.some(t => t.place_of_visit.includes(country)) // Check if country is in any trip
                         ? "bg-red-500 text-white"
                         : "bg-white text-black"
                     }`}
@@ -381,29 +365,77 @@ export default function TravelHistoryPage() {
             </div>
           </div>
 
-          {/* Selected Places Details */}
-          {selectedTrips.length > 0 && (
-            <div className="mb-8 p-4 bg-gray-100 border-2 border-black">
-              <h3 className="text-lg font-black text-black mb-4 uppercase">
+          {/* Selected Trips Details */}
+          {trips.length > 0 && (
+            <div className="mb-8 p-4 bg-gray-100 border-4 border-black mt-8">
+              <h3 className="text-2xl font-black text-black mb-4 uppercase">
                 Your Selected Trips
               </h3>
-              {selectedTrips.map((trip, idx) => (
+              {trips.map((trip, index) => (
                 <div
-                  key={idx}
-                  className="p-4 border-2 border-black bg-white mb-4"
+                  key={index}
+                  className="p-6 border-2 border-black bg-white mb-4 relative"
                 >
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-bold uppercase">
-                      {trip}
-                    </h4>
-                    <button
-                      onClick={() => removePlace(trip)}
-                      className="text-red-500"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                  <button
+                    onClick={() => removeTrip(index)}
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <h4 className="font-bold uppercase text-xl mb-4">
+                    Trip to: {trip.place_of_visit.join(", ")}
+                  </h4>
+
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label htmlFor={`startDate-${index}`} className="block text-sm font-medium text-gray-700">
+                        Start Date
+                      </label>
+                      <Input
+                        id={`startDate-${index}`}
+                        type="date"
+                        value={trip.start_date}
+                        onChange={(e) =>
+                          updateTripField(index, "start_date", e.target.value)
+                        }
+                        className="mt-1 block w-full h-10 border-2 border-black"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`endDate-${index}`} className="block text-sm font-medium text-gray-700">
+                        End Date
+                      </label>
+                      <Input
+                        id={`endDate-${index}`}
+                        type="date"
+                        value={trip.end_date}
+                        onChange={(e) =>
+                          updateTripField(index, "end_date", e.target.value)
+                        }
+                        className="mt-1 block w-full h-10 border-2 border-black"
+                      />
+                    </div>
                   </div>
-                  {/* The following details are removed as per the new_code */}
+
+                  <div>
+                    <label htmlFor={`budget-${index}`} className="block text-sm font-medium text-gray-700">
+                      Overall Budget (INR)
+                    </label>
+                    <Input
+                      id={`budget-${index}`}
+                      type="number"
+                      value={trip.overall_budget === 0 ? "" : trip.overall_budget}
+                      onChange={(e) =>
+                        updateTripField(
+                          index,
+                          "overall_budget",
+                          Number(e.target.value)
+                        )
+                      }
+                      className="mt-1 block w-full h-10 border-2 border-black"
+                      min="0"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

@@ -131,7 +131,7 @@ export default function AITripPlannerPage() {
     `;
 
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/generate-itinerary`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/gemini/generate-itinerary`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -187,7 +187,7 @@ export default function AITripPlannerPage() {
     // Store the answer
     const newTripDetails = { ...tripDetails };
     const detailKeys = ["destination", "dates", "num_people", "trip_type", "budget"];
-    newTripDetails[detailKeys[conversationStage]] = currentInput;
+    newTripDetails[detailKeys[conversationStage] as keyof typeof tripDetails] = currentInput;
     setTripDetails(newTripDetails);
 
     const nextStage = conversationStage + 1;

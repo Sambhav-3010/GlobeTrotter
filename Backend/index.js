@@ -33,9 +33,9 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/api", flightsRouter);
 app.use("/trip", tripRoutes);
-app.use('/api', geminiRoutes);
+app.use('/gemini', geminiRoutes);
 app.use("/newtrip", tripRoutes);
-app.use("/travelhistory", travelHistoryRoutes); // Register new travel history routes
+app.use("/travelhistory", travelHistoryRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
