@@ -27,8 +27,8 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      const onboardingRequired = localStorage.getItem('onboardingRequired');
-      if (onboardingRequired !== 'true') {
+      const onboardingRequired = localStorage.getItem("onboardingRequired");
+      if (onboardingRequired !== "true") {
         router.push("/dashboard");
       }
     }
@@ -155,8 +155,19 @@ export default function AuthPage() {
         showAlert("Google login successful!", "success");
         const user = data.data.user;
         setUser(user);
-        localStorage.setItem('onboardingRequired', 'true');
-        router.push("/onboarding");
+        localStorage.setItem("onboardingRequired", "true");
+        if (
+          user &&
+          user.username &&
+          user.age &&
+          user.city &&
+          user.phoneNumber &&
+          user.gender
+        ) {
+          router.push("/dashboard");
+        } else {
+          router.push("/onboarding");
+        }
       } else {
         showAlert(data.error || "Google login failed.", "destructive");
       }

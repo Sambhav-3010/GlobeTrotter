@@ -74,7 +74,6 @@ export default function OnboardingPage() {
     if (!user) {
       router.push("/auth");
     } else if (onboardingRequired !== 'true' && user.username && user.age && user.city && user.phoneNumber) {
-      // Only redirect to dashboard if onboarding is not required and profile is complete
       router.push("/dashboard");
     }
   }, [router, user]);

@@ -42,7 +42,6 @@ export default function DashboardPage() {
   const { user, loading, setUser } = useUser();
   const { showAlert } = useAlert();
 
-  console.log(user);
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth");
@@ -50,8 +49,8 @@ export default function DashboardPage() {
   }, [loading, user, router]);
 
   const handleSignOut = () => {
-    setUser(null); // Clear user in context
-    showAlert("Signed out successfully", "success", "Logout"); // Use showAlert
+    setUser(null);
+    showAlert("Signed out successfully", "success", "Logout");
 
     setTimeout(() => {
       router.push("/auth")
