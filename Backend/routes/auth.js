@@ -8,6 +8,7 @@ const {
   socialLogin,
   updateProfileDetails,
   addPastTravels,
+  logout,
 } = require("../controllers/authController");
 const asyncHandler = require("../utils/asyncHandler");
 
@@ -19,10 +20,7 @@ router.post("/login", login);
 
 router.post("/social-login", socialLogin);
 
-router.post("/logout", (req, res) => {
-  res.clearCookie("token");
-  res.status(200).json({ message: "Logged out successfully" });
-});
+router.post("/logout", logout);
 
 router.get("/me", protect, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(

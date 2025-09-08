@@ -200,4 +200,14 @@ const socialLogin = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, login, createToken, socialLogin, updateProfileDetails, addPastTravels };
+const logout = asyncHandler(async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+  });
+
+  res.status(200).json({ success: true, message: "Logged out successfully" });
+});
+
+module.exports = { register, login, createToken, socialLogin, updateProfileDetails, addPastTravels, logout };

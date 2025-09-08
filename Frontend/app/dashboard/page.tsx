@@ -53,13 +53,14 @@ export default function DashboardPage() {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/logout`,
       {
-        method: "POS",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
       }
     );
+    console.log("Logout response status:", response);
     if (!response.ok) {
       showAlert("Error signing out. Please try again");
       return;
@@ -67,7 +68,6 @@ export default function DashboardPage() {
       await response.json();
       if(response.status === 200) {
         showAlert("Signed out successfully", "success", "Logout");
-        router.push("/auth");
       }
       else{
         showAlert("Error signing out. Please try again");
