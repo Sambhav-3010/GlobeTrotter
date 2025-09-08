@@ -53,6 +53,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       if (response.ok) {
         const data = await response.json();
         setUserState(data.user);
+        router.push('/dashboard');
       } else {
         console.error(
           "Failed to fetch user data with token:",

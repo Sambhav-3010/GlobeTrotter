@@ -6,9 +6,8 @@ import { Plane, Sun, Moon, User, LogOut, Zap, MapPin, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "../providers/theme-provider"
 import { useRouter } from "next/navigation"
-import { useUser } from "../context/UserContext"; // Import useUser
-import { useAlert } from "../context/AlertContext"; // Import useAlert
-import Cookies from "js-cookie";
+import { useUser } from "../context/UserContext";
+import { useAlert } from "../context/AlertContext";
 
 const trendingDestinations = [
   {
@@ -40,9 +39,10 @@ const trendingDestinations = [
 export default function DashboardPage() {
   const { theme, toggleTheme } = useTheme()
   const router = useRouter()
-  const { user, loading, setUser } = useUser(); // Get user, loading, setUser from context
-  const { showAlert } = useAlert(); // Get showAlert from AlertContext
+  const { user, loading, setUser } = useUser();
+  const { showAlert } = useAlert();
 
+  console.log(user);
   useEffect(() => {
     if (!loading && !user) {
       router.push("/auth");
