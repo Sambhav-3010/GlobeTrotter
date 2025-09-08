@@ -7,6 +7,7 @@ const tripRoutes = require("./routes/trip");
 const flightsRouter = require("./routes/serp");
 const cors = require("cors");
 const geminiRoutes = require('./routes/gemini');
+const travelHistoryRoutes = require('./routes/travelHistory');
 const errorHandler = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -32,8 +33,9 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/api", flightsRouter);
 app.use("/trip", tripRoutes);
-app.use('/api', geminiRoutes); 
+app.use('/api', geminiRoutes);
 app.use("/newtrip", tripRoutes);
+app.use("/travelhistory", travelHistoryRoutes); // Register new travel history routes
 
 // Error handling middleware
 app.use(errorHandler);

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ExclamationTriangleIcon, CheckCircledIcon, InfoCircledIcon } from "@radix-ui/react-icons";
 
@@ -40,6 +40,18 @@ export const AlertProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const hideAlert = () => {
     setAlert((prev) => ({ ...prev, isOpen: false }));
   };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (alert.isOpen) {
+      timer = setTimeout(() => {
+        hideAlert();
+      }, 3000); // Alert disappears after 3 seconds
+    }
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [alert.isOpen, hideAlert]);
 
   const getIcon = (type: AlertType) => {
     switch (type) {

@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const asyncHandler = require("../utils/asyncHandler");
-const crypto = require('crypto'); // Moved crypto import to top
+const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -11,18 +11,24 @@ const createToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
+// Helper for setting cookies
+const setAuthCookie = (res, token) => {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,             // must be true if frontend is on https
+    sameSite: "none",         // required for cross-site cookies
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
+
 const register = asyncHandler(async (req, res) => {
   const { f_name, l_name, username, age, city, country, email, phoneNumber, password } = req.body;
 
-  // Basic input validation
   if (!f_name || !l_name || !email || !password) {
     res.status(400);
     throw new Error('All required fields must be provided (first name, last name, email, password)');
   }
 
-  // Removed age validation for initial registration
-
-  // Basic email format validation
   const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
   if (!emailRegex.test(email)) {
     res.status(400);
@@ -40,7 +46,6 @@ const register = asyncHandler(async (req, res) => {
     throw new Error('User with this email already exists');
   }
 
-  // Conditionally check for username existence only if provided
   if (username) {
     const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
     if (existingUserByUsername) {
@@ -54,8 +59,8 @@ const register = asyncHandler(async (req, res) => {
   const user = await User.create({
     f_name: f_name.trim(),
     l_name: l_name.trim(),
-    username: username ? username.trim() : undefined, // Only include if provided
-    age: age || undefined, // Only include if provided
+    username: username ? username.trim() : undefined,
+    age: age || undefined,
     city: city ? city.trim() : undefined,
     country: country ? country.trim() : undefined,
     email: email.toLowerCase(),
@@ -67,6 +72,7 @@ const register = asyncHandler(async (req, res) => {
   });
 
   const token = createToken(user._id);
+  setAuthCookie(res, token);
 
   res.status(201).json({
     success: true,
@@ -76,23 +82,24 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-        res.status(401);
-        throw new Error('Invalid email');
-    }
+  const user = await User.findOne({ email: email.toLowerCase() });
+  if (!user) {
+    res.status(401);
+    throw new Error('Invalid email');
+  }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password || '');
-    if (!isPasswordValid) {
-        res.status(401);
-        throw new Error('Invalid credentials');
-    }
+  const isPasswordValid = await bcrypt.compare(password, user.password || '');
+  if (!isPasswordValid) {
+    res.status(401);
+    throw new Error('Invalid credentials');
+  }
 
-    const token = createToken(user._id);
+  const token = createToken(user._id);
+  setAuthCookie(res, token);
 
-    res.json({ success: true, message: 'Login successful', data: { user, token } });
+  res.json({ success: true, message: 'Login successful', data: { user, token } });
 });
 
 const socialLogin = asyncHandler(async (req, res) => {
@@ -112,7 +119,6 @@ const socialLogin = asyncHandler(async (req, res) => {
   let user = await User.findOne({ email: email.toLowerCase() });
 
   if (!user) {
-    // Register new user with a random password
     const randomPassword = crypto.randomBytes(16).toString('hex');
     const hashedPassword = await bcrypt.hash(randomPassword, 12);
 
@@ -120,17 +126,12 @@ const socialLogin = asyncHandler(async (req, res) => {
       f_name: f_name.trim(),
       l_name: l_name.trim(),
       email: email.toLowerCase(),
-      password: hashedPassword, // Store a random hashed password
-      // Other optional fields can be set to null or default initially
-      username: null,
-      age: null,
-      city: null,
-      country: null,
-      phoneNumber: null,
+      password: hashedPassword,
     });
   }
 
   const token = createToken(user._id);
+  setAuthCookie(res, token);
 
   res.status(200).json({
     success: true,

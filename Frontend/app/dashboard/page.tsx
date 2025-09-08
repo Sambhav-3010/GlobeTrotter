@@ -5,8 +5,10 @@ import { motion } from "framer-motion"
 import { Plane, Sun, Moon, User, LogOut, Zap, MapPin, Bot } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "../providers/theme-provider"
-import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { useUser } from "../context/UserContext"; // Import useUser
+import { useAlert } from "../context/AlertContext"; // Import useAlert
+import Cookies from "js-cookie";
 
 const trendingDestinations = [
   {
@@ -37,43 +39,35 @@ const trendingDestinations = [
 
 export default function DashboardPage() {
   const { theme, toggleTheme } = useTheme()
-  const { toast } = useToast()
   const router = useRouter()
-  const [userData, setUserData] = useState<any>(null)
+  const { user, loading, setUser } = useUser(); // Get user, loading, setUser from context
+  const { showAlert } = useAlert(); // Get showAlert from AlertContext
 
   useEffect(() => {
-    // Load user data from localStorage
-    const user = localStorage.getItem("user")
-    const onboardingFname = localStorage.getItem("f_name")
-    const onboardingLname = localStorage.getItem("l_name")
-    const onboardingEmail = localStorage.getItem("email")
-
-    if (user) {
-      const userDataParsed = JSON.parse(user)
-      setUserData(userDataParsed)
-    } else if (onboardingFname && onboardingLname && onboardingEmail) {
-      router.push("/onboarding")
-    } else {
-      router.push("/auth")
+    if (!loading && !user) {
+      router.push("/auth");
     }
-  }, [router])
+  }, [loading, user, router]);
 
   const handleSignOut = () => {
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-    localStorage.removeItem("user")
-    localStorage.removeItem("f_name")
-    localStorage.removeItem("l_name")
-    localStorage.removeItem("email")
-    localStorage.removeItem("theme")
-
-    toast({
-      title: "Signed out successfully",
-      description: "You have been logged out of your account.",
-    })
+    setUser(null); // Clear user in context
+    showAlert("Signed out successfully", "success", "Logout"); // Use showAlert
 
     setTimeout(() => {
       router.push("/auth")
     }, 1000)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
+        <p className="text-white text-xl font-bold">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Should redirect by useEffect, but a fallback
   }
 
   return (
@@ -147,7 +141,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Welcome with Profile */}
-            {userData && (
+            {user && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -155,14 +149,14 @@ export default function DashboardPage() {
                 className="bg-white border-4 border-black p-4 mb-6"
               >
                 <div className="flex items-center gap-3">
-                  {userData.profilePhoto && (
+                  {user.profilePhoto && (
                     <img
-                      src={userData.profilePhoto || "/placeholder.svg"}
+                      src={user.profilePhoto || "/placeholder.svg"}
                       alt="Profile"
                       className="w-12 h-12 rounded-full border-2 border-black"
                     />
                   )}
-                  <p className="text-black font-bold text-lg">Welcome back, {userData.f_name || "Explorer"}! 🎉</p>
+                  <p className="text-black font-bold text-lg">Welcome back, {user.f_name || "Explorer"}! 🎉</p>
                 </div>
               </motion.div>
             )}

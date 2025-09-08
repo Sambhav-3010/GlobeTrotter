@@ -6,6 +6,8 @@ import { Search, MapPin, Globe, ArrowRight, ArrowLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { useUser } from "../context/UserContext"; // Import useUser
+import Cookies from "js-cookie"; // Import Cookies
 
 const indianCities = [
   "Mumbai",
@@ -130,17 +132,17 @@ type TripDetails = {
 
 export default function TravelHistoryPage() {
   const router = useRouter();
-  const [selectedTrips, setSelectedTrips] = useState<TripDetails[]>([]);
+  const { user, setUser } = useUser(); // Get user and setUser from context
+  const [selectedTrips, setSelectedTrips] = useState<string[]>([]); // Change to string[]
   const [citySearch, setCitySearch] = useState("");
   const [countrySearch, setCountrySearch] = useState("");
 
-  // redirect if no profile
+  // Redirect if no profile or no token
   useEffect(() => {
-    const profile = localStorage.getItem("user");
-    if (!profile) {
-      router.push("/onboarding");
+    if (!user && !Cookies.get("token")) {
+      router.push("/auth");
     }
-  }, [router]);
+  }, [router, user]);
 
   const filteredCities = useMemo(
     () =>
@@ -163,71 +165,49 @@ export default function TravelHistoryPage() {
   // Toggle selection
   const togglePlace = (place: string) => {
     setSelectedTrips((prev) => {
-      const existing = prev.find((t) => t.place_of_visit === place);
-      if (existing) {
-        return prev.filter((t) => t.place_of_visit !== place);
+      if (prev.includes(place)) {
+        return prev.filter((p) => p !== place);
       } else {
-        return [
-          ...prev,
-          {
-            place_of_visit: place,
-            start_date: "",
-            end_date: "",
-            duration_of_visit: 0,
-            overall_budget: 0,
-          },
-        ];
+        return [...prev, place];
       }
     });
   };
 
-  // Update details for a selected place
+  // Update details for a selected place (This function will be removed or repurposed if not needed)
   const updateTripDetails = (
     place: string,
     field: keyof TripDetails,
     value: any
   ) => {
-    setSelectedTrips((prev) =>
-      prev.map((t) =>
-        t.place_of_visit === place
-          ? {
-              ...t,
-              [field]:
-                field === "overall_budget" || field === "duration_of_visit"
-                  ? Number(value)
-                  : value,
-            }
-          : t
-      )
-    );
+    // This function might become obsolete if we only store place names
   };
 
   const removePlace = (place: string) => {
-    setSelectedTrips((prev) => prev.filter((t) => t.place_of_visit !== place));
+    setSelectedTrips((prev) => prev.filter((p) => p !== place));
   };
 
   const handleContinue = async () => {
-    const travelData = {
-      tripDetails: selectedTrips.map((trip) => ({
-        userId: JSON.parse(localStorage.getItem("user") || '{}').id,
-        place_of_visit: trip.place_of_visit,
-        start_date: trip.start_date,
-        end_date: trip.end_date,
-        duration_of_visit: trip.duration_of_visit,
-        overall_budget: trip.overall_budget,
-      })),
-    };
+    const token = Cookies.get("token");
+    const userId = user?.id;
+
+    if (!token || !userId) {
+      console.error("Authentication token or user ID missing.");
+      // Use showAlert here if you have it in this component's context
+      alert("Authentication required. Please log in again.");
+      router.push("/auth");
+      return;
+    }
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/trip/history`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/users/${userId}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(travelData),
-          credentials: "include",
+          body: JSON.stringify({ placesVisited: selectedTrips }), // Send only placesVisited
         }
       );
 
@@ -239,6 +219,7 @@ export default function TravelHistoryPage() {
       }
 
       const result = await response.json();
+      setUser(result.user); // Update user context with updated data
       router.push("/dashboard");
     } catch (err) {
       console.error("Network error sending travel history:", err);
@@ -247,28 +228,41 @@ export default function TravelHistoryPage() {
   };
 
   const handleSkip = async () => {
-    const travelData = {
-      placesVisited: [],
-      recentlyVisited: "",
-      noOfTrips: 0,
-    };
+    const token = Cookies.get("token");
+    const userId = user?.id;
+
+    if (!token || !userId) {
+      console.error("Authentication token or user ID missing.");
+      alert("Authentication required. Please log in again.");
+      router.push("/auth");
+      return;
+    }
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/trip/history`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/users/${userId}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(travelData),
-          credentials: "include",
+          body: JSON.stringify({ placesVisited: [] }), // Send empty array for skip
         }
       );
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error from server:", response.status, errorData);
+        alert(`Failed to skip travel history: ${response.status}`);
+        return;
+      }
+      const result = await response.json();
+      setUser(result.user); // Update user context
       router.push("/dashboard");
     } catch (err) {
-      console.error("Network error:", err);
+      console.error("Network error skipping travel history:", err);
+      alert("Network error. Please try again.");
     }
   };
 
@@ -341,7 +335,7 @@ export default function TravelHistoryPage() {
                     key={city}
                     onClick={() => togglePlace(city)}
                     className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
-                      selectedTrips.some((t) => t.place_of_visit === city)
+                      selectedTrips.includes(city)
                         ? "bg-yellow-400"
                         : "bg-white"
                     }`}
@@ -375,7 +369,7 @@ export default function TravelHistoryPage() {
                     key={country}
                     onClick={() => togglePlace(country)}
                     className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
-                      selectedTrips.some((t) => t.place_of_visit === country)
+                      selectedTrips.includes(country)
                         ? "bg-red-500 text-white"
                         : "bg-white text-black"
                     }`}
@@ -400,87 +394,16 @@ export default function TravelHistoryPage() {
                 >
                   <div className="flex justify-between items-center mb-2">
                     <h4 className="font-bold uppercase">
-                      {trip.place_of_visit}
+                      {trip}
                     </h4>
                     <button
-                      onClick={() => removePlace(trip.place_of_visit)}
+                      onClick={() => removePlace(trip)}
                       className="text-red-500"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="font-bold">Start Date</label>
-                      <Input
-                        type="date"
-                        value={trip.start_date}
-                        onChange={(e) =>
-                          updateTripDetails(
-                            trip.place_of_visit,
-                            "start_date",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold">End Date</label>
-                      <Input
-                        type="date"
-                        value={trip.end_date}
-                        onChange={(e) => {
-                          updateTripDetails(
-                            trip.place_of_visit,
-                            "end_date",
-                            e.target.value
-                          );
-                          if (trip.start_date && e.target.value) {
-                            const duration = Math.ceil(
-                              (new Date(e.target.value).getTime() -
-                                new Date(trip.start_date).getTime()) /
-                                (1000 * 60 * 60 * 24)
-                            );
-                            updateTripDetails(
-                              trip.place_of_visit,
-                              "duration_of_visit",
-                              duration
-                            );
-                          }
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold">Duration (Days)</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={trip.duration_of_visit}
-                        onChange={(e) =>
-                          updateTripDetails(
-                            trip.place_of_visit,
-                            "duration_of_visit",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="font-bold">Overall Budget</label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={trip.overall_budget}
-                        onChange={(e) =>
-                          updateTripDetails(
-                            trip.place_of_visit,
-                            "overall_budget",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
+                  {/* The following details are removed as per the new_code */}
                 </div>
               ))}
             </div>

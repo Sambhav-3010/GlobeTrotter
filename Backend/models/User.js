@@ -50,12 +50,6 @@ const userSchema = new Schema(
       default: 0,
       min: 0,
     },
-    placesVisited: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
     recentlyVisited: {
       type: String,
       trim: true,

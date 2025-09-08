@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,12 +10,13 @@ import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useUser } from "../context/UserContext"
 import { useAlert } from "../context/AlertContext"
-import { auth, googleProvider } from "@/lib/firebase" // Re-import Firebase auth and provider
-import { signInWithPopup } from "firebase/auth" // Re-import Firebase signInWithPopup
+import { auth, googleProvider } from "@/lib/firebase"
+import { signInWithPopup } from "firebase/auth"
+
 
 export default function AuthPage() {
   const router = useRouter()
-  const { setUser } = useUser()
+  const { setUser, user } = useUser()
   const { showAlert } = useAlert();
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
@@ -24,7 +25,12 @@ export default function AuthPage() {
   const [f_name, setF_name] = useState("")
   const [l_name, setL_name] = useState("")
   const [loading, setLoading] = useState(false)
-  // const [errors, setErrors] = useState<{ [key: string]: string }>({}) // Removed errors state
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [loading, user, router]);
 
   const validateForm = () => {
     const newErrors: string[] = []
@@ -60,7 +66,6 @@ export default function AuthPage() {
     }
 
     setLoading(true)
-    // setErrors({}) // Removed
 
     try {
       let response
@@ -70,6 +75,7 @@ export default function AuthPage() {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({ email, password }),
         })
       } else {
@@ -78,6 +84,7 @@ export default function AuthPage() {
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({ f_name, l_name, email, password }),
         })
       }
@@ -85,12 +92,13 @@ export default function AuthPage() {
       const data = await response.json()
 
       if (response.ok) {
-        document.cookie = `token=${data.token}; path=/; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}`;
-        showAlert(data.error, "success")
-        if (isLogin) {
-          router.push("/dashboard")
+        showAlert(data.message, "success");
+        const user = data.user;
+        setUser(user);
+        if (user && user.username && user.age && user.city && user.phoneNumber) {
+          router.push("/dashboard");
         } else {
-          router.push("/onboarding")
+          router.push("/onboarding");
         }
       } else {
         showAlert(data.error || "An unexpected error occurred.", "destructive")
@@ -102,33 +110,32 @@ export default function AuthPage() {
     }
   }
 
-  const handleGoogleAuth = async () => { // Made async again
+  const handleGoogleAuth = async () => {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      // Extract user details from Firebase result
       const email = user.email || '';
       const f_name = user.displayName?.split(' ')[0] || '';
       const l_name = user.displayName?.split(' ').slice(1).join(' ') || '';
-      const profilePhoto = user.photoURL || null;
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/social-login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ f_name, l_name, email, profilePhoto }),
+        credentials: "include",
+        body: JSON.stringify({ f_name, l_name, email }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        document.cookie = `token=${data.token}; path=/; expires=${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()}`;
         showAlert("Google login successful!", "success");
-        // Determine redirect based on user's completion of onboarding
-        if (data.data.user.username && data.data.user.age) { // Adjusting to data.data.user
+        const user = data.data.user;
+        setUser(user);
+        if (user && user.username && user.age && user.city && user.phoneNumber) {
           router.push("/dashboard");
         } else {
           router.push("/onboarding");
@@ -145,7 +152,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
-      {/* Header */}
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center">
           <div className="flex items-center gap-2">
@@ -162,14 +168,12 @@ export default function AuthPage() {
           transition={{ duration: 0.6 }}
           className="w-full max-w-md"
         >
-          {/* Welcome Message */}
           <div className="bg-white border-4 border-black p-6 mb-6">
             <p className="text-black font-medium text-lg">
               GlobeTrotter is a new way for travel enthusiasts to connect, explore, and build amazing journeys together.
             </p>
           </div>
 
-          {/* CTA Button */}
           <div className="mb-8">
             <div className="bg-yellow-400 border-4 border-black p-4 text-center">
               <p className="text-black font-bold text-sm uppercase tracking-wide">
@@ -178,13 +182,11 @@ export default function AuthPage() {
             </div>
           </div>
 
-          {/* Auth Form */}
           <div className="bg-white border-4 border-black p-8">
             <div className="flex mb-6">
               <button
                 onClick={() => {
                   setIsLogin(true)
-                  // setErrors({}) // Removed
                 }}
                 className={`flex-1 py-3 text-center font-bold text-lg transition-colors ${
                   isLogin ? "text-black border-b-4 border-black" : "text-gray-500 hover:text-gray-700"
@@ -195,7 +197,6 @@ export default function AuthPage() {
               <button
                 onClick={() => {
                   setIsLogin(false)
-                  // setErrors({}) // Removed
                 }}
                 className={`flex-1 py-3 text-center font-bold text-lg transition-colors ${
                   !isLogin ? "text-black border-b-4 border-black" : "text-gray-500 hover:text-gray-700"
@@ -222,7 +223,6 @@ export default function AuthPage() {
                         placeholder="Enter your first name"
                       />
                     </div>
-                    {/* {errors.f_name && <p className="text-red-600 text-sm mt-1 font-medium">{errors.f_name}</p>} */}
                   </div>
                   <div>
                     <Label htmlFor="l_name" className="text-black font-bold text-sm uppercase tracking-wide">
@@ -238,7 +238,6 @@ export default function AuthPage() {
                         placeholder="Enter your last name"
                       />
                     </div>
-                    {/* {errors.l_name && <p className="text-red-600 text-sm mt-1 font-medium">{errors.l_name}</p>} */}
                   </div>
                 </>
               )}
@@ -257,7 +256,6 @@ export default function AuthPage() {
                     placeholder="Enter your email"
                   />
                 </div>
-                {/* {errors.email && <p className="text-red-600 text-sm mt-1 font-medium">{errors.email}</p>} */}
               </div>
 
               <div>
@@ -282,10 +280,8 @@ export default function AuthPage() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {/* {errors.password && <p className="text-red-600 text-sm mt-1 font-medium">{errors.password}</p>} */}
               </div>
 
-              {/* {errors.api && <p className="text-red-600 text-sm mt-1 font-medium text-center">{errors.api}</p>} */}
 
               <Button
                 type="submit"
@@ -339,8 +335,6 @@ export default function AuthPage() {
               CONTINUE WITH GOOGLE
             </Button>
           </div>
-
-          {/* Social Links */}
           <div className="flex justify-center gap-4 mt-8">
             <div className="w-12 h-12 bg-white border-2 border-black flex items-center justify-center">
               <span className="text-black font-bold">T</span>

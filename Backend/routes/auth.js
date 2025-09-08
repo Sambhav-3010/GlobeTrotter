@@ -1,182 +1,25 @@
 const express = require("express");
-// const passport = require("passport"); // Removed
 const User = require("../models/User");
-const protect = require("../middleware/protect"); // Import protect middleware
-const { register, login, createToken, socialLogin } = require("../controllers/authController"); // Import socialLogin
+const protect = require("../middleware/protect");
+const {
+  register,
+  login,
+  createToken,
+  socialLogin,
+} = require("../controllers/authController");
 const asyncHandler = require("../utils/asyncHandler");
-// Removed Firebase admin import
-// Removed crypto import
 
 const router = express.Router();
 
-// Removed the local createToken function
-
-// Use the register function from authController
 router.post("/register", register);
 
-router.post(
-  "/login",
-  asyncHandler(async (req, res) => {
-    if (req.user) {
-      const token = createToken(req.user._id);
-      return res
-        .status(200)
-        .json({ message: "Already authenticated", user: req.user, token });
-    }
+router.post("/login", login);
 
-    const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400);
-      throw new Error("Email and password are required");
-    }
-
-    const user = await User.findOne({ email: email.toLowerCase() });
-
-    // Modified login logic to handle users without a password (Firebase-created)
-    if (!user) {
-      res.status(401);
-      throw new Error("Invalid credentials");
-    }
-
-    if (user.password) { // Only compare password if it exists
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        res.status(401);
-        throw new Error("Invalid credentials");
-      }
-    } else { // User exists but no password (likely Firebase user), cannot login with email/password
-      res.status(401);
-      throw new Error("This account uses Google Sign-in. Please use 'Continue with Google'.");
-    }
-
-    const token = createToken(user._id);
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "none", // Changed to "none" for cross-origin requests
-      secure: true, // Must be true when sameSite is "none"
-    });
-
-    // req.login(user, (err) => { // Removed Passport.js login
-    //   if (err) console.error(err);
-    return res.json({
-        message: "Login successful",
-        user: {
-          id: user._id,
-          f_name: user.f_name,
-          username: user.username,
-          age: user.age,
-          city: user.city,
-        },
-        token,
-      });
-    // }); // Removed Passport.js login
-  })
-);
-
-// Social Login route
 router.post("/social-login", socialLogin);
 
-// Removed Firebase authentication route
-// router.post("/firebase-login", asyncHandler(async (req, res) => {
-//   const { idToken } = req.body;
-
-//   if (!idToken) {
-//     res.status(400);
-//     throw new Error("Firebase ID token is required");
-//   }
-
-//   try {
-//     const decodedToken = await admin.auth().verifyIdToken(idToken);
-//     const { email, name, picture, family_name, given_name } = decodedToken;
-
-//     let user = await User.findOne({ email });
-
-//     if (!user) {
-//       // Register new user from Firebase info
-//       const f_name = given_name || name.split(' ')[0] || 'User';
-//       const l_name = family_name || name.split(' ').slice(1).join(' ') || '';
-
-//       // Generate a random password for Firebase-authenticated users
-//       const randomPassword = crypto.randomBytes(16).toString('hex');
-//       const hashedPassword = await bcrypt.hash(randomPassword, 12);
-
-//       user = new User({
-//         email,
-//         f_name,
-//         l_name,
-//         password: hashedPassword, // Store a random hashed password
-//         // Other optional fields can be set to null or default initially
-//         username: null,
-//         age: null,
-//         city: null,
-//         country: null,
-//         phoneNumber: null,
-//         profilePhoto: picture || null,
-//       });
-//       await user.save();
-//     }
-
-//     // Generate and set application's JWT
-//     const token = createToken(user._id);
-//     res.cookie("token", token, {
-//       httpOnly: true,
-//       maxAge: 7 * 24 * 60 * 60 * 1000,
-//       sameSite: "none",
-//       secure: true,
-//     });
-
-//     res.status(200).json({
-//       message: "Firebase login successful",
-//       user: {
-//         id: user._id,
-//         f_name: user.f_name,
-//         l_name: user.l_name,
-//         email: user.email,
-//         username: user.username,
-//         age: user.age,
-//         city: user.city,
-//         country: user.country,
-//         phoneNumber: user.phoneNumber,
-//         profilePhoto: user.profilePhoto,
-//       },
-//       token,
-//     });
-
-//   } catch (error) {
-//     res.status(401);
-//     throw new Error(`Firebase authentication failed: ${error.message}`);
-//   }
-// }));
-
-// Removed Google OAuth routes
-// router.get(
-//   "/google",
-//   passport.authenticate("google", { scope: ["profile", "email"] })
-// );
-
-// router.get(
-//   "/google/callback",
-//   passport.authenticate("google", { failureRedirect: "/", session: true }),
-//   (req, res) => {
-//     const token = createToken(req.user._id);
-//     res.cookie("token", token, {
-//       httpOnly: true,
-//       maxAge: 7 * 24 * 60 * 60 * 1000,
-//       sameSite: "none",
-//       secure: true,
-//     });
-//     const redirectUrl = `${process.env.FRONTEND_URL}/auth/google/callback`;
-//     res.redirect(redirectUrl);
-//   }
-// );
-
 router.get("/logout", (req, res) => {
-  // req.logout(() => { // Removed Passport.js logout
-    res.clearCookie("token");
-    res.redirect(process.env.FRONTEND_URL || "/");
-  // }); // Removed Passport.js logout
+  res.clearCookie("token");
+  res.redirect(process.env.FRONTEND_URL || "/");
 });
 
 router.post(
@@ -184,7 +27,7 @@ router.post(
   protect,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select(
-      "f_name l_name phoneNumber city age recentlyVisited placesVisited email numberOfTrips"
+      "f_name l_name phoneNumber city age recentlyVisited email numberOfTrips"
     );
 
     if (!user) {
@@ -206,8 +49,6 @@ router.post(
   })
 );
 
-// No longer defining 'protect' middleware here. It's imported from Backend/middleware/protect.js
-
 router.put(
   "/users/:id",
   protect,
@@ -215,26 +56,38 @@ router.put(
     const { id } = req.params;
     const { username, age, city, phoneNumber, gender } = req.body;
 
-    // Input validation for update fields
-    if (username && (typeof username !== 'string' || username.trim().length < 3)) {
+    if (
+      username &&
+      (typeof username !== "string" || username.trim().length < 3)
+    ) {
       res.status(400);
-      throw new Error('Username must be a string of at least 3 characters.');
+      throw new Error("Username must be a string of at least 3 characters.");
     }
-    if (age !== undefined && (typeof age !== 'number' || age < 10 || age > 100)) {
+    if (
+      age !== undefined &&
+      (typeof age !== "number" || age < 10 || age > 100)
+    ) {
       res.status(400);
-      throw new Error('Age must be a number between 10 and 100.');
+      throw new Error("Age must be a number between 10 and 100.");
     }
-    if (city && (typeof city !== 'string' || city.trim().length < 2)) {
+    if (city && (typeof city !== "string" || city.trim().length < 2)) {
       res.status(400);
-      throw new Error('City must be a string of at least 2 characters.');
+      throw new Error("City must be a string of at least 2 characters.");
     }
-    if (phoneNumber && (typeof phoneNumber !== 'string' || !/^[0-9]{10}$/.test(phoneNumber))) {
+    if (
+      phoneNumber &&
+      (typeof phoneNumber !== "string" || !/^[0-9]{10}$/.test(phoneNumber))
+    ) {
       res.status(400);
-      throw new Error('Phone number must be a 10-digit string.');
+      throw new Error("Phone number must be a 10-digit string.");
     }
-    if (gender && (typeof gender !== 'string' || !['male', 'female', 'other'].includes(gender.toLowerCase()))) {
+    if (
+      gender &&
+      (typeof gender !== "string" ||
+        !["male", "female", "other"].includes(gender.toLowerCase()))
+    ) {
       res.status(400);
-      throw new Error('Gender must be one of \'male\', \'female\', or \'other\'.');
+      throw new Error("Gender must be one of 'male', 'female', or 'other'.");
     }
 
     if (req.user._id.toString() !== id) {

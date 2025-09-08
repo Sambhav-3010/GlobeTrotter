@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 import { useUser } from "../context/UserContext"
-import Cookies from "js-cookie"
+import { useAlert } from "../context/AlertContext";
 
 const indianCities = [
   "Mumbai",
@@ -54,25 +54,44 @@ const indianCities = [
 export default function OnboardingPage() {
   const router = useRouter()
   const { user, setUser } = useUser()
+  const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     f_name: user?.f_name || "",
     l_name: user?.l_name || "",
     username: user?.username || "",
     email: user?.email || "",
-    mobile: user?.mobile || "",
+    phoneNumber: user?.phoneNumber || "",
     gender: user?.gender || "",
     age: user?.age ? String(user.age) : "",
     city: user?.city || "",
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!localStorage.getItem("user")) {
-      router.push("/auth")
+    if (!user) {
+      router.push("/auth");
     }
-  }, [router])
+    if (user && user.username && user.age && user.city && user.phoneNumber) {
+      router.push("/dashboard");
+    }
+  }, [router, user])
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        f_name: user.f_name || "",
+        l_name: user.l_name || "",
+        email: user.email || "",
+        username: user.username || "",
+        phoneNumber: user.phoneNumber || "",
+        gender: user.gender || "",
+        age: user.age ? String(user.age) : "",
+        city: user.city || "",
+      }));
+    }
+  }, [user]);
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
@@ -92,7 +111,11 @@ export default function OnboardingPage() {
     }
 
     setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    if (Object.keys(newErrors).length > 0) {
+      showAlert(Object.values(newErrors).join("\n"), "destructive", "Validation Error");
+      return false;
+    }
+    return true;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,11 +128,10 @@ export default function OnboardingPage() {
     setErrors({})
 
     try {
-      const token = Cookies.get("token")
-      const userId = user?.id
+      const userId = user?._id
 
-      if (!token || !userId) {
-        setErrors({ api: "Authentication token or user ID missing." })
+      if (!userId) {
+        showAlert("Authentication token or user ID missing.", "destructive");
         setLoading(false)
         return
       }
@@ -118,13 +140,13 @@ export default function OnboardingPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
+        credentials: "include",
         body: JSON.stringify({
           username: formData.username,
           age: Number.parseInt(formData.age),
           city: formData.city,
-          phoneNumber: formData.mobile,
+          phoneNumber: formData.phoneNumber,
           gender: formData.gender,
         }),
       });
@@ -135,10 +157,10 @@ export default function OnboardingPage() {
         setUser(data.user)
         router.push("/travel-history")
       } else {
-        setErrors({ api: data.message || "Failed to update profile." })
+        showAlert(data.message || "Failed to update profile.", "destructive");
       }
     } catch (error: any) {
-      setErrors({ api: error.message || "Network error. Please try again." });
+      showAlert(error.message || "Network error. Please try again.", "destructive");
     } finally {
       setLoading(false);
     }
@@ -151,26 +173,12 @@ export default function OnboardingPage() {
     }
   }
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        const result = event.target?.result as string
-        setPhotoPreview(result)
-        setFormData((prev) => ({ ...prev, profilePhoto: result }))
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
   const handleSkip = () => {
     router.push("/dashboard")
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
-      {/* Header */}
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -194,7 +202,6 @@ export default function OnboardingPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-2xl"
         >
-          {/* Header Message */}
           <div className="bg-white border-4 border-black p-6 mb-8 text-center">
             <h2 className="text-3xl font-black text-black mb-3 uppercase">TELL US ABOUT YOURSELF</h2>
             <p className="text-black font-medium">Help us personalize your travel experience</p>
@@ -202,29 +209,7 @@ export default function OnboardingPage() {
 
           <div className="bg-white border-4 border-black p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Profile Photo Upload */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="relative">
-                  <div className="w-24 h-24 border-4 border-black bg-gray-100 flex items-center justify-center overflow-hidden">
-                    {photoPreview ? (
-                      <img
-                        src={photoPreview || "/placeholder.svg"}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-12 h-12 text-gray-400" />
-                    )}
-                  </div>
-                  <label className="absolute bottom-0 right-0 w-8 h-8 bg-yellow-400 border-2 border-black flex items-center justify-center cursor-pointer">
-                    <Camera className="w-4 h-4 text-black" />
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                  </label>
-                </div>
-                <p className="text-black font-bold text-sm mt-2 uppercase">Upload Profile Photo</p>
-              </div>
 
-              {/* Name Fields (Read-only) */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="f_name" className="text-black font-bold text-sm uppercase tracking-wide">
@@ -255,7 +240,6 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* Email (Read-only) */}
               <div>
                 <Label htmlFor="email" className="text-black font-bold text-sm uppercase tracking-wide">
                   Email Address
@@ -270,7 +254,6 @@ export default function OnboardingPage() {
                 />
               </div>
 
-              {/* Username */}
               <div>
                 <Label htmlFor="username" className="text-black font-bold text-sm uppercase tracking-wide">
                   Username
@@ -286,7 +269,6 @@ export default function OnboardingPage() {
                 {errors.username && <p className="text-red-600 text-sm mt-1 font-medium">{errors.username}</p>}
               </div>
 
-              {/* Mobile Number */}
               <div>
                 <Label htmlFor="mobile" className="text-black font-bold text-sm uppercase tracking-wide">
                   Mobile Number
@@ -296,17 +278,16 @@ export default function OnboardingPage() {
                   <Input
                     id="mobile"
                     type="tel"
-                    value={formData.mobile}
-                    onChange={(e) => handleInputChange("mobile", e.target.value)}
+                    value={formData.phoneNumber}
+                    onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                     className="pl-12 h-12 border-2 border-black focus:border-red-500 focus:ring-0 text-black font-medium"
                     placeholder="9876543210"
                     maxLength={10}
                   />
                 </div>
-                {errors.mobile && <p className="text-red-600 text-sm mt-1 font-medium">{errors.mobile}</p>}
+                {errors.phoneNumber && <p className="text-red-600 text-sm mt-1 font-medium">{errors.phoneNumber}</p>}
               </div>
 
-              {/* Gender and Age */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <Label className="text-black font-bold text-sm uppercase tracking-wide">Gender</Label>
@@ -341,7 +322,6 @@ export default function OnboardingPage() {
                 </div>
               </div>
 
-              {/* City */}
               <div>
                 <Label className="text-black font-bold text-sm uppercase tracking-wide">City of Residence</Label>
                 <Select value={formData.city} onValueChange={(value) => handleInputChange("city", value)}>
@@ -363,7 +343,6 @@ export default function OnboardingPage() {
 
               {errors.api && <p className="text-red-600 text-sm mt-1 font-medium text-center">{errors.api}</p>}
 
-              {/* Navigation Buttons */}
               <div className="flex gap-4 pt-6">
                 <Button
                   type="button"
