@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Plane, Sun, Moon, User, LogOut, Zap, MapPin, Bot } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useTheme } from "../providers/theme-provider"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Plane, Sun, Moon, User, LogOut, Zap, MapPin, Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "../providers/theme-provider";
+import { useRouter } from "next/navigation";
 import { useUser } from "../context/UserContext";
 import { useAlert } from "../context/AlertContext";
 
@@ -34,11 +34,11 @@ const trendingDestinations = [
     duration: "10 Days",
     description: "Breathtaking mountain views",
   },
-]
+];
 
 export default function DashboardPage() {
-  const { theme, toggleTheme } = useTheme()
-  const router = useRouter()
+  const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
   const { user, loading, setUser } = useUser();
   const { showAlert } = useAlert();
 
@@ -48,14 +48,32 @@ export default function DashboardPage() {
     }
   }, [loading, user, router]);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setUser(null);
-    showAlert("Signed out successfully", "success", "Logout");
-
-    setTimeout(() => {
-      router.push("/auth")
-    }, 1000)
-  }
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/logout`,
+      {
+        method: "POS",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      }
+    );
+    if (!response.ok) {
+      showAlert("Error signing out. Please try again");
+      return;
+    } else {
+      await response.json();
+      if(response.status === 200) {
+        showAlert("Signed out successfully", "success", "Logout");
+        router.push("/auth");
+      }
+      else{
+        showAlert("Error signing out. Please try again");
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -76,7 +94,9 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="text-white text-2xl font-bold">globetrotter</div>
-            <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">BETA</div>
+            <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">
+              BETA
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -107,7 +127,8 @@ export default function DashboardPage() {
           className="bg-white border-4 border-black p-6 mb-8"
         >
           <p className="text-black font-medium text-xl">
-            Ready to explore the world? Where wanderlust meets adventure, and journeys go beyond the ordinary!
+            Ready to explore the world? Where wanderlust meets adventure, and
+            journeys go beyond the ordinary!
           </p>
         </motion.div>
 
@@ -119,13 +140,19 @@ export default function DashboardPage() {
           className="mb-12"
         >
           <div className="bg-yellow-400 border-4 border-black p-4 text-center mb-8">
-            <p className="text-black font-bold text-lg uppercase tracking-wide">PACK YOUR BAGS, EXPLORE THE WORLD!!!</p>
+            <p className="text-black font-bold text-lg uppercase tracking-wide">
+              PACK YOUR BAGS, EXPLORE THE WORLD!!!
+            </p>
           </div>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-12">
           {/* Left Side - Main Heading */}
-          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
             <h1 className="text-6xl lg:text-8xl font-black text-black mb-6 leading-none">
               FIND YOUR
               <br />
@@ -134,8 +161,8 @@ export default function DashboardPage() {
 
             <div className="bg-white border-4 border-black p-6 mb-8">
               <p className="text-black font-medium text-lg">
-                Ready to flip the script on traveling? Where adventure meets discovery, and connections go beyond the
-                journey!
+                Ready to flip the script on traveling? Where adventure meets
+                discovery, and connections go beyond the journey!
               </p>
             </div>
 
@@ -155,7 +182,9 @@ export default function DashboardPage() {
                       className="w-12 h-12 rounded-full border-2 border-black"
                     />
                   )}
-                  <p className="text-black font-bold text-lg">Welcome back, {user.f_name || "Explorer"}! 🎉</p>
+                  <p className="text-black font-bold text-lg">
+                    Welcome back, {user.f_name || "Explorer"}! 🎉
+                  </p>
                 </div>
               </motion.div>
             )}
@@ -168,8 +197,11 @@ export default function DashboardPage() {
               </div>
               <div className="bg-white border-4 border-black px-4 py-2">
                 <p className="text-black font-medium">
-                  Email us at <span className="text-red-600 font-bold">support@globetrotter.com</span> to get early
-                  access on Android
+                  Email us at{" "}
+                  <span className="text-red-600 font-bold">
+                    support@globetrotter.com
+                  </span>{" "}
+                  to get early access on Android
                 </p>
               </div>
             </div>
@@ -203,17 +235,26 @@ export default function DashboardPage() {
             </div>
 
             <div className="bg-white border-4 border-black p-6">
-              <div className="text-black font-bold text-lg mb-2 uppercase tracking-wide">TRENDING DESTINATIONS →</div>
+              <div className="text-black font-bold text-lg mb-2 uppercase tracking-wide">
+                TRENDING DESTINATIONS →
+              </div>
               <div className="space-y-2">
                 {trendingDestinations.map((dest) => (
-                  <div key={dest.id} className="flex justify-between items-center py-2 border-b border-gray-200">
+                  <div
+                    key={dest.id}
+                    className="flex justify-between items-center py-2 border-b border-gray-200"
+                  >
                     <div>
                       <div className="font-bold text-black">{dest.name}</div>
-                      <div className="text-sm text-gray-600">{dest.description}</div>
+                      <div className="text-sm text-gray-600">
+                        {dest.description}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-black">{dest.budget}</div>
-                      <div className="text-sm text-gray-600">{dest.duration}</div>
+                      <div className="text-sm text-gray-600">
+                        {dest.duration}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -229,11 +270,13 @@ export default function DashboardPage() {
           transition={{ delay: 0.8 }}
           className="text-center"
         >
-          <h2 className="text-4xl font-black text-white mb-6">NEED HELP OR SUPPORT?</h2>
+          <h2 className="text-4xl font-black text-white mb-6">
+            NEED HELP OR SUPPORT?
+          </h2>
           <div className="bg-white border-4 border-black p-6 max-w-2xl mx-auto">
             <p className="text-black font-medium text-lg">
-              Have questions about GlobeTrotter? Need technical support? We're here to help you plan the perfect
-              adventure!
+              Have questions about GlobeTrotter? Need technical support? We're
+              here to help you plan the perfect adventure!
             </p>
           </div>
         </motion.div>
@@ -252,5 +295,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

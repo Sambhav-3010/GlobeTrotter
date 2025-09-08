@@ -19,9 +19,9 @@ router.post("/login", login);
 
 router.post("/social-login", socialLogin);
 
-router.get("/logout", (req, res) => {
+router.post("/logout", (req, res) => {
   res.clearCookie("token");
-  res.redirect(process.env.FRONTEND_URL || "/");
+  res.status(200).json({ message: "Logged out successfully" });
 });
 
 router.get("/me", protect, asyncHandler(async (req, res) => {

@@ -16,7 +16,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
 
   const newTravelHistoryEntries = trips.map(trip => ({
     userId,
-    place_of_visit: Array.isArray(trip.place_of_visit) ? trip.place_of_visit : [trip.place_of_visit], // Ensure it's an array
+    place_of_visit: trip.place_of_visit, // Expect a single string
     start_date: trip.start_date || null,
     end_date: trip.end_date || null,
     duration_of_visit: trip.duration_of_visit || 0,

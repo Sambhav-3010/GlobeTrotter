@@ -7,7 +7,7 @@ const travelHistorySchema = new mongoose.Schema({
     required: true,
   },
   place_of_visit: {
-    type: [String], // Changed to an array of strings
+    type: String,
     required: true,
     trim: true,
   },

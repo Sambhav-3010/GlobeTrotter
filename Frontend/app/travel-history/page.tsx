@@ -124,7 +124,7 @@ const countries = [
 ];
 
 type TripDetails = {
-  place_of_visit: string[]; // Can be multiple places for a single trip entry
+  place_of_visit: string; // Changed to a single string
   start_date: string;
   end_date: string;
   overall_budget: number;
@@ -166,7 +166,7 @@ export default function TravelHistoryPage() {
     setTrips((prev) => [
       ...prev,
       {
-        place_of_visit: [place],
+        place_of_visit: place, // Changed to a single string
         start_date: "",
         end_date: "",
         overall_budget: 0,
@@ -195,8 +195,8 @@ export default function TravelHistoryPage() {
     }
 
     const isValid = trips.every(trip => {
-      if (!trip.place_of_visit.length) {
-        showAlert("Each trip must have at least one place of visit.", "destructive");
+      if (!trip.place_of_visit) { // Check for non-empty string
+        showAlert("Each trip must have a place of visit.", "destructive");
         return false;
       }
       if (!trip.start_date || !trip.end_date) {
@@ -220,11 +220,12 @@ export default function TravelHistoryPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/travelhistory/`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/travelhistory`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${Cookies.get("token")}`,
           },
           credentials: "include",
           body: JSON.stringify({ trips }),
@@ -247,6 +248,26 @@ export default function TravelHistoryPage() {
     } catch (err: any) {
       console.error("Network error sending travel history:", err);
       showAlert(err.message || "Network error. Please try again.", "destructive");
+    }
+  };
+
+  const handleSkip = async () => {
+    const userId = user?._id;
+    if (!userId) {
+      showAlert("Authentication required. Please log in again.", "destructive");
+      router.push("/auth");
+      return;
+    }
+
+    try {
+      // Optionally send an empty array to the backend if you want to record a "skipped" state
+      // For now, just clear the flag and redirect
+      localStorage.removeItem('travelHistoryRequired'); // Clear the flag even if skipped
+      showAlert("Travel history skipped.", "info");
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("Error skipping travel history:", err);
+      showAlert(err.message || "An error occurred while skipping.", "destructive");
     }
   };
 
@@ -319,7 +340,7 @@ export default function TravelHistoryPage() {
                     key={city}
                     onClick={() => addTrip(city)} // Use addTrip
                     className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
-                      trips.some(t => t.place_of_visit.includes(city)) // Check if city is in any trip
+                      trips.some(t => t.place_of_visit === city) // Check if city is in any trip
                         ? "bg-yellow-400"
                         : "bg-white"
                     }`}
@@ -353,7 +374,7 @@ export default function TravelHistoryPage() {
                     key={country}
                     onClick={() => addTrip(country)} // Use addTrip
                     className={`px-4 py-2 text-sm font-bold border-2 border-black uppercase ${
-                      trips.some(t => t.place_of_visit.includes(country)) // Check if country is in any trip
+                      trips.some(t => t.place_of_visit === country) // Check if country is in any trip
                         ? "bg-red-500 text-white"
                         : "bg-white text-black"
                     }`}
@@ -383,7 +404,7 @@ export default function TravelHistoryPage() {
                     <X className="w-5 h-5" />
                   </button>
                   <h4 className="font-bold uppercase text-xl mb-4">
-                    Trip to: {trip.place_of_visit.join(", ")}
+                    Trip to: {trip.place_of_visit}
                   </h4>
 
                   <div className="grid md:grid-cols-2 gap-4 mb-4">
