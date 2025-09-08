@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useUser } from "../context/UserContext"
 import { useAlert } from "../context/AlertContext";
 
@@ -53,6 +53,7 @@ const indianCities = [
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const pathname = usePathname()
   const { user, setUser } = useUser()
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
@@ -67,16 +68,27 @@ export default function OnboardingPage() {
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false); // New state to track submission
 
   useEffect(() => {
     const onboardingRequired = localStorage.getItem('onboardingRequired');
+    const travelHistoryRequired = localStorage.getItem('travelHistoryRequired');
 
     if (!user) {
       router.push("/auth");
-    } else if (onboardingRequired !== 'true' && user.username && user.age && user.city && user.phoneNumber) {
+    } else if (
+      !isSubmitting && // Only redirect if not currently submitting
+      pathname === "/onboarding" &&
+      onboardingRequired !== 'true' &&
+      travelHistoryRequired !== 'true' && // Also check travelHistoryRequired
+      user.username &&
+      user.age &&
+      user.city &&
+      user.phoneNumber
+    ) {
       router.push("/dashboard");
     }
-  }, [router, user]);
+  }, [router, user, pathname, isSubmitting]);
 
   useEffect(() => {
     if (user) {
@@ -126,6 +138,7 @@ export default function OnboardingPage() {
     }
 
     setLoading(true)
+    setIsSubmitting(true); // Set submitting flag to true
     setErrors({})
 
     try {
@@ -157,6 +170,7 @@ export default function OnboardingPage() {
       if (response.ok) {
         setUser(data.user);
         localStorage.removeItem('onboardingRequired'); // Clear the flag after successful onboarding
+        localStorage.setItem('travelHistoryRequired', 'true'); // Set travelHistoryRequired
         router.push("/travel-history");
       } else {
         showAlert(data.message || "Failed to update profile.", "destructive");
@@ -165,6 +179,7 @@ export default function OnboardingPage() {
       showAlert(error.message || "Network error. Please try again.", "destructive");
     } finally {
       setLoading(false);
+      setIsSubmitting(false); // Reset submitting flag
     }
   }
 
@@ -177,6 +192,8 @@ export default function OnboardingPage() {
 
   const handleSkip = () => {
     localStorage.removeItem('onboardingRequired'); // Clear the flag even if skipped
+    localStorage.removeItem('travelHistoryRequired'); // Clear travelHistoryRequired as well
+    setIsSubmitting(true); // Set submitting flag to true for skip as well
     router.push("/dashboard");
   }
 
