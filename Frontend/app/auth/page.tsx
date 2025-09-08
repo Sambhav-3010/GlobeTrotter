@@ -100,22 +100,24 @@ export default function AuthPage() {
       const data = await response.json();
 
       if (response.ok) {
-        showAlert(data.message, "success");
-        const user = data.user;
+        showAlert("Login successful!", "success");
+        const user = data.data.user;
         setUser(user);
+        localStorage.setItem("onboardingRequired", "true");
         if (
           user &&
           user.username &&
           user.age &&
           user.city &&
-          user.phoneNumber
+          user.phoneNumber &&
+          user.gender
         ) {
           router.push("/dashboard");
         } else {
           router.push("/onboarding");
         }
       } else {
-        showAlert(data.error || "An unexpected error occurred.", "destructive");
+        showAlert(data.error || "Login failed.", "destructive");
       }
     } catch (error: any) {
       showAlert(
