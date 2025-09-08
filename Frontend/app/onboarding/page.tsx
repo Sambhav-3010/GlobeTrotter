@@ -69,13 +69,15 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    const onboardingRequired = localStorage.getItem('onboardingRequired');
+
     if (!user) {
       router.push("/auth");
-    }
-    if (user && user.username && user.age && user.city && user.phoneNumber) {
+    } else if (onboardingRequired !== 'true' && user.username && user.age && user.city && user.phoneNumber) {
+      // Only redirect to dashboard if onboarding is not required and profile is complete
       router.push("/dashboard");
     }
-  }, [router, user])
+  }, [router, user]);
 
   useEffect(() => {
     if (user) {
@@ -136,7 +138,7 @@ export default function OnboardingPage() {
         return
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/users/${userId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/profile-details`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -154,8 +156,9 @@ export default function OnboardingPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setUser(data.user)
-        router.push("/travel-history")
+        setUser(data.user);
+        localStorage.removeItem('onboardingRequired'); // Clear the flag after successful onboarding
+        router.push("/travel-history");
       } else {
         showAlert(data.message || "Failed to update profile.", "destructive");
       }
@@ -174,7 +177,8 @@ export default function OnboardingPage() {
   }
 
   const handleSkip = () => {
-    router.push("/dashboard")
+    localStorage.removeItem('onboardingRequired'); // Clear the flag even if skipped
+    router.push("/dashboard");
   }
 
   return (

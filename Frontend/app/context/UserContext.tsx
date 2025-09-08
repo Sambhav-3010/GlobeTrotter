@@ -1,5 +1,7 @@
 "use client";
 
+import { ro } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 import React, {
   createContext,
   useState,
@@ -35,6 +37,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter()
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -68,8 +71,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchUserData();
-    setUserState(null);
-    setLoading(false);
   }, [fetchUserData]);
 
   const setUser = (userData: User | null) => {

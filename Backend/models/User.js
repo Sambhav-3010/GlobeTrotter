@@ -41,9 +41,14 @@ const userSchema = new Schema(
       type: String,
       trim: true,
     },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+      trim: true,
+    },
     password: {
       type: String,
-      required: false, // Set to false to accommodate Firebase-authenticated users
+      required: function() { return !this.googleId; }, // Required if not a Google-authenticated user
     },
     numberOfTrips: {
       type: Number,

@@ -3,14 +3,12 @@ const User = require('../models/User');
 
 const protect = async (req, res, next) => {
   try {
-    if (req.isAuthenticated && req.isAuthenticated()) {
-      return next();
-    }
 
     let token = req.headers.authorization?.startsWith("Bearer")
       ? req.headers.authorization.split(" ")[1]
       : null;
 
+    console.log("Token from header:", token);
     if (!token && req.cookies.token) {
       token = req.cookies.token;
     }

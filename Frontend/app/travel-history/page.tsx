@@ -188,7 +188,7 @@ export default function TravelHistoryPage() {
 
   const handleContinue = async () => {
     const token = Cookies.get("token");
-    const userId = user?.id;
+    const userId = user?._id;
 
     if (!token || !userId) {
       console.error("Authentication token or user ID missing.");
@@ -200,13 +200,13 @@ export default function TravelHistoryPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/users/${userId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/past-travels`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({ placesVisited: selectedTrips }), // Send only placesVisited
         }
       );
@@ -229,7 +229,7 @@ export default function TravelHistoryPage() {
 
   const handleSkip = async () => {
     const token = Cookies.get("token");
-    const userId = user?.id;
+    const userId = user?._id;
 
     if (!token || !userId) {
       console.error("Authentication token or user ID missing.");
@@ -240,13 +240,13 @@ export default function TravelHistoryPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/users/${userId}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/past-travels`,
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({ placesVisited: [] }), // Send empty array for skip
         }
       );

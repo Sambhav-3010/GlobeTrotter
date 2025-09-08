@@ -1,55 +1,57 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useRouter } from "next/navigation"
-import { useUser } from "../context/UserContext"
-import { useAlert } from "../context/AlertContext"
-import { auth, googleProvider } from "@/lib/firebase"
-import { signInWithPopup } from "firebase/auth"
-
+import type React from "react";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
+import { useUser } from "../context/UserContext";
+import { useAlert } from "../context/AlertContext";
+import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
 
 export default function AuthPage() {
-  const router = useRouter()
-  const { setUser, user } = useUser()
+  const router = useRouter();
+  const { setUser, user } = useUser();
   const { showAlert } = useAlert();
-  const [isLogin, setIsLogin] = useState(true)
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [f_name, setF_name] = useState("")
-  const [l_name, setL_name] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [isLogin, setIsLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [f_name, setF_name] = useState("");
+  const [l_name, setL_name] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
-      router.push("/dashboard");
+      const onboardingRequired = localStorage.getItem('onboardingRequired');
+      if (onboardingRequired !== 'true') {
+        router.push("/dashboard");
+      }
     }
   }, [loading, user, router]);
 
   const validateForm = () => {
-    const newErrors: string[] = []
+    const newErrors: string[] = [];
 
     if (!email) {
-      newErrors.push("Email is required")
+      newErrors.push("Email is required");
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.push("Please enter a valid email")
+      newErrors.push("Please enter a valid email");
     }
 
     if (!password) {
-      newErrors.push("Password is required")
+      newErrors.push("Password is required");
     } else if (password.length < 6) {
-      newErrors.push("Password must be at least 6 characters")
+      newErrors.push("Password must be at least 6 characters");
     }
 
     if (!isLogin) {
-      if (!f_name) newErrors.push("First name is required")
-      if (!l_name) newErrors.push("Last name is required")
+      if (!f_name) newErrors.push("First name is required");
+      if (!l_name) newErrors.push("Last name is required");
     }
 
     if (newErrors.length > 0) {
@@ -57,58 +59,73 @@ export default function AuthPage() {
       return false;
     }
     return true;
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!validateForm()) {
-      return
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
     try {
-      let response
+      let response;
       if (isLogin) {
-        response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ email, password }),
-        })
+        response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ email, password }),
+          }
+        );
       } else {
-        response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ f_name, l_name, email, password }),
-        })
+        response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/register`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ f_name, l_name, email, password }),
+          }
+        );
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
         showAlert(data.message, "success");
         const user = data.user;
         setUser(user);
-        if (user && user.username && user.age && user.city && user.phoneNumber) {
+        if (
+          user &&
+          user.username &&
+          user.age &&
+          user.city &&
+          user.phoneNumber
+        ) {
           router.push("/dashboard");
         } else {
           router.push("/onboarding");
         }
       } else {
-        showAlert(data.error || "An unexpected error occurred.", "destructive")
+        showAlert(data.error || "An unexpected error occurred.", "destructive");
       }
     } catch (error: any) {
-      showAlert(error.message || "Network error. Please try again.", "destructive")
+      showAlert(
+        error.message || "Network error. Please try again.",
+        "destructive"
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleGoogleAuth = async () => {
     setLoading(true);
@@ -116,18 +133,21 @@ export default function AuthPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
 
-      const email = user.email || '';
-      const f_name = user.displayName?.split(' ')[0] || '';
-      const l_name = user.displayName?.split(' ').slice(1).join(' ') || '';
+      const email = user.email || "";
+      const f_name = user.displayName?.split(" ")[0] || "";
+      const l_name = user.displayName?.split(" ").slice(1).join(" ") || "";
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/social-login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ f_name, l_name, email }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/social-login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ f_name, l_name, email }),
+        }
+      );
 
       const data = await response.json();
 
@@ -135,20 +155,20 @@ export default function AuthPage() {
         showAlert("Google login successful!", "success");
         const user = data.data.user;
         setUser(user);
-        if (user && user.username && user.age && user.city && user.phoneNumber) {
-          router.push("/dashboard");
-        } else {
-          router.push("/onboarding");
-        }
+        localStorage.setItem('onboardingRequired', 'true');
+        router.push("/onboarding");
       } else {
         showAlert(data.error || "Google login failed.", "destructive");
       }
     } catch (error: any) {
-      showAlert(error.message || "Google authentication failed.", "destructive");
+      showAlert(
+        error.message || "Google authentication failed.",
+        "destructive"
+      );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
@@ -156,7 +176,9 @@ export default function AuthPage() {
         <div className="max-w-6xl mx-auto flex items-center">
           <div className="flex items-center gap-2">
             <div className="text-white text-2xl font-bold">globetrotter</div>
-            <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">BETA</div>
+            <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">
+              BETA
+            </div>
           </div>
         </div>
       </div>
@@ -170,7 +192,8 @@ export default function AuthPage() {
         >
           <div className="bg-white border-4 border-black p-6 mb-6">
             <p className="text-black font-medium text-lg">
-              GlobeTrotter is a new way for travel enthusiasts to connect, explore, and build amazing journeys together.
+              GlobeTrotter is a new way for travel enthusiasts to connect,
+              explore, and build amazing journeys together.
             </p>
           </div>
 
@@ -186,20 +209,24 @@ export default function AuthPage() {
             <div className="flex mb-6">
               <button
                 onClick={() => {
-                  setIsLogin(true)
+                  setIsLogin(true);
                 }}
                 className={`flex-1 py-3 text-center font-bold text-lg transition-colors ${
-                  isLogin ? "text-black border-b-4 border-black" : "text-gray-500 hover:text-gray-700"
+                  isLogin
+                    ? "text-black border-b-4 border-black"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 LOG IN
               </button>
               <button
                 onClick={() => {
-                  setIsLogin(false)
+                  setIsLogin(false);
                 }}
                 className={`flex-1 py-3 text-center font-bold text-lg transition-colors ${
-                  !isLogin ? "text-black border-b-4 border-black" : "text-gray-500 hover:text-gray-700"
+                  !isLogin
+                    ? "text-black border-b-4 border-black"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 SIGN UP
@@ -210,7 +237,10 @@ export default function AuthPage() {
               {!isLogin && (
                 <>
                   <div>
-                    <Label htmlFor="f_name" className="text-black font-bold text-sm uppercase tracking-wide">
+                    <Label
+                      htmlFor="f_name"
+                      className="text-black font-bold text-sm uppercase tracking-wide"
+                    >
                       First Name
                     </Label>
                     <div className="relative mt-2">
@@ -225,7 +255,10 @@ export default function AuthPage() {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="l_name" className="text-black font-bold text-sm uppercase tracking-wide">
+                    <Label
+                      htmlFor="l_name"
+                      className="text-black font-bold text-sm uppercase tracking-wide"
+                    >
                       Last Name
                     </Label>
                     <div className="relative mt-2">
@@ -242,7 +275,10 @@ export default function AuthPage() {
                 </>
               )}
               <div>
-                <Label htmlFor="email" className="text-black font-bold text-sm uppercase tracking-wide">
+                <Label
+                  htmlFor="email"
+                  className="text-black font-bold text-sm uppercase tracking-wide"
+                >
                   Email Address
                 </Label>
                 <div className="relative mt-2">
@@ -259,7 +295,10 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <Label htmlFor="password" className="text-black font-bold text-sm uppercase tracking-wide">
+                <Label
+                  htmlFor="password"
+                  className="text-black font-bold text-sm uppercase tracking-wide"
+                >
                   Password
                 </Label>
                 <div className="relative mt-2">
@@ -277,11 +316,14 @@ export default function AuthPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               </div>
-
 
               <Button
                 type="submit"
@@ -294,7 +336,10 @@ export default function AuthPage() {
 
             {isLogin && (
               <div className="text-center mt-4">
-                <a href="#" className="text-red-600 hover:text-red-700 text-sm font-bold uppercase">
+                <a
+                  href="#"
+                  className="text-red-600 hover:text-red-700 text-sm font-bold uppercase"
+                >
                   Forgot your password?
                 </a>
               </div>
@@ -305,7 +350,9 @@ export default function AuthPage() {
                 <div className="w-full border-t-2 border-black" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-black font-bold uppercase">OR</span>
+                <span className="px-4 bg-white text-black font-bold uppercase">
+                  OR
+                </span>
               </div>
             </div>
 
@@ -349,5 +396,5 @@ export default function AuthPage() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }

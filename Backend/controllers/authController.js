@@ -22,7 +22,7 @@ const setAuthCookie = (res, token) => {
 };
 
 const register = asyncHandler(async (req, res) => {
-  const { f_name, l_name, username, age, city, country, email, phoneNumber, password } = req.body;
+  const { f_name, l_name, email, password } = req.body;
 
   if (!f_name || !l_name || !email || !password) {
     res.status(400);
@@ -46,25 +46,12 @@ const register = asyncHandler(async (req, res) => {
     throw new Error('User with this email already exists');
   }
 
-  if (username) {
-    const existingUserByUsername = await User.findOne({ username: username.toLowerCase() });
-    if (existingUserByUsername) {
-      res.status(400);
-      throw new Error('Username not available');
-    }
-  }
-
   const hashedPassword = await bcrypt.hash(password, 12);
 
   const user = await User.create({
     f_name: f_name.trim(),
     l_name: l_name.trim(),
-    username: username ? username.trim() : undefined,
-    age: age || undefined,
-    city: city ? city.trim() : undefined,
-    country: country ? country.trim() : undefined,
     email: email.toLowerCase(),
-    phoneNumber: phoneNumber ? phoneNumber.trim() : undefined,
     password: hashedPassword,
     numberOfTrips: 0,
     placesVisited: [],
@@ -79,6 +66,79 @@ const register = asyncHandler(async (req, res) => {
     message: 'Account created successfully',
     data: { user, token }
   });
+});
+
+const updateProfileDetails = asyncHandler(async (req, res) => {
+  const { username, age, city, phoneNumber, gender } = req.body;
+  const userId = req.user._id;
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (username && (typeof username !== "string" || username.trim().length < 3)) {
+    res.status(400);
+    throw new Error("Username must be a string of at least 3 characters.");
+  }
+  if (age !== undefined && (typeof age !== "number" || age < 10 || age > 100)) {
+    res.status(400);
+    throw new Error("Age must be a number between 10 and 100.");
+  }
+  if (city && (typeof city !== "string" || city.trim().length < 2)) {
+    res.status(400);
+    throw new Error("City must be a string of at least 2 characters.");
+  }
+  if (phoneNumber && (typeof phoneNumber !== "string" || !/^[0-9]{10}$/.test(phoneNumber))) {
+    res.status(400);
+    throw new Error("Phone number must be a 10-digit string.");
+  }
+  if (gender && (typeof gender !== "string" || !["male", "female", "other"].includes(gender.toLowerCase()))) {
+    res.status(400);
+    throw new Error("Gender must be one of 'male', 'female', or 'other'.");
+  }
+
+  if (username && username !== user.username) {
+    const existingUserByUsername = await User.findOne({ username: username });
+    if (existingUserByUsername && existingUserByUsername._id.toString() !== userId.toString()) {
+      res.status(400);
+      throw new Error("Username not available");
+    }
+    user.username = username;
+  }
+
+  user.age = age !== undefined ? age : user.age;
+  user.city = city !== undefined ? city : user.city;
+  user.phoneNumber = phoneNumber !== undefined ? phoneNumber : user.phoneNumber;
+  user.gender = gender !== undefined ? gender : user.gender;
+
+  const updatedUser = await user.save();
+
+  res.json({ message: "Profile updated successfully", user: updatedUser });
+});
+
+const addPastTravels = asyncHandler(async (req, res) => {
+  const { placesVisited } = req.body;
+  const userId = req.user._id;
+
+  if (!placesVisited || !Array.isArray(placesVisited) || placesVisited.length === 0) {
+    res.status(400);
+    throw new Error("Please provide an array of places visited.");
+  }
+
+  const user = await User.findById(userId);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  user.placesVisited = placesVisited;
+  const updatedUser = await user.save();
+
+  res.json({ message: "Past travels added successfully", user: updatedUser });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -140,4 +200,4 @@ const socialLogin = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, login, createToken, socialLogin };
+module.exports = { register, login, createToken, socialLogin, updateProfileDetails, addPastTravels };
