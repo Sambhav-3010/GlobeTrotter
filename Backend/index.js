@@ -31,7 +31,7 @@ mongoose
 app.get("/", (req, res) => {
   res.send(`<html><body><h1>Welcome to GhumoFiro API</h1></body></html>`);
 });
-app.use("/auth", protect, authRoutes);
+app.use("/auth", authRoutes);
 app.use("/api", protect,flightsRouter);
 app.use("/trip", protect, tripRoutes);
 app.use('/gemini',protect, geminiRoutes);
