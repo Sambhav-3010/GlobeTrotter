@@ -28,7 +28,7 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 app.get("/", (req, res) => {
-  res.send(`<html><body><h1>Welcome to GlobeTrotter API</h1></body></html>`);
+  res.send(`<html><body><h1>Welcome to GhumoFiro API</h1></body></html>`);
 });
 app.use("/auth", authRoutes);
 app.use("/api", flightsRouter);

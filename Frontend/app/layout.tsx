@@ -10,7 +10,7 @@ import { AlertProvider } from "./context/AlertContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "GlobeTrotter - Your Travel Companion",
+  title: "GhumoFiro - Your Travel Companion",
   description: "Plan amazing trips with AI assistance and connect with fellow travelers",
     generator: 'v0.dev'
 }

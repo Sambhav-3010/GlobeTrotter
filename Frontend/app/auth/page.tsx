@@ -188,7 +188,7 @@ export default function AuthPage() {
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center">
           <div className="flex items-center gap-2">
-            <div className="text-white text-2xl font-bold">globetrotter</div>
+            <div className="text-white text-2xl font-bold">GhumoFiro</div>
             <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">
               BETA
             </div>
@@ -205,7 +205,7 @@ export default function AuthPage() {
         >
           <div className="bg-white border-4 border-black p-6 mb-6">
             <p className="text-black font-medium text-lg">
-              GlobeTrotter is a new way for travel enthusiasts to connect,
+              GhumoFiro is a new way for travel enthusiasts to connect,
               explore, and build amazing journeys together.
             </p>
           </div>

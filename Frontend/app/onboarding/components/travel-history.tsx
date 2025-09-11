@@ -181,7 +181,7 @@ export default function TravelHistory({ userData, updateUserData, nextStep, prev
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center">
           <div className="flex items-center gap-2">
-            <div className="text-white text-2xl font-bold">globetrotter</div>
+            <div className="text-white text-2xl font-bold">GhumoFiro</div>
             <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">BETA</div>
           </div>
         </div>

@@ -68,7 +68,7 @@ export default function MainDashboard() {
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="text-white text-2xl font-bold">globetrotter</div>
+            <div className="text-white text-2xl font-bold">GhumoFiro</div>
             <div className="bg-yellow-400 text-black px-2 py-1 text-xs font-bold rounded">BETA</div>
           </div>
 
@@ -170,7 +170,7 @@ export default function MainDashboard() {
               </div>
               <div className="bg-white border-4 border-black px-4 py-2">
                 <p className="text-black font-medium">
-                  Email us at <span className="text-red-600 font-bold">support@globetrotter.com</span> to get early
+                  Email us at <span className="text-red-600 font-bold">support@ghumofiro.com</span> to get early
                   access on Android
                 </p>
               </div>
@@ -234,7 +234,7 @@ export default function MainDashboard() {
           <h2 className="text-4xl font-black text-white mb-6">NEED HELP OR SUPPORT?</h2>
           <div className="bg-white border-4 border-black p-6 max-w-2xl mx-auto">
             <p className="text-black font-medium text-lg">
-              Have questions about GlobeTrotter? Need technical support? We're here to help you plan the perfect
+              Have questions about GhumoFiro? Need technical support? We're here to help you plan the perfect
               adventure!
             </p>
           </div>
