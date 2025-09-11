@@ -163,11 +163,13 @@ const login = asyncHandler(async (req, res) => {
 });
 
 const socialLogin = asyncHandler(async (req, res) => {
-  const { f_name, l_name, email } = req.body;
+  const { f_name, l_name, email, googleId } = req.body;
 
   if (!f_name || !l_name || !email) {
     res.status(400);
-    throw new Error('First name, last name, and email are required for social login.');
+    throw new Error(
+      'First name, last name, and email are required for social login.'
+    );
   }
 
   const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
@@ -176,18 +178,32 @@ const socialLogin = asyncHandler(async (req, res) => {
     throw new Error('Invalid email format');
   }
 
-  let user = await User.findOne({ email: email.toLowerCase() });
+  let user;
+
+  if (googleId) {
+    user = await User.findOne({ googleId });
+  }
 
   if (!user) {
-    const randomPassword = crypto.randomBytes(16).toString('hex');
-    const hashedPassword = await bcrypt.hash(randomPassword, 12);
+    user = await User.findOne({ email: email.toLowerCase() });
+  }
 
+  if (!user) {
+    // If no user found by googleId or email, create a new user
     user = await User.create({
       f_name: f_name.trim(),
       l_name: l_name.trim(),
       email: email.toLowerCase(),
-      password: hashedPassword,
+      googleId: googleId || null, // Store googleId if available
+      numberOfTrips: 0,
+      placesVisited: [],
+      recentlyVisited: null,
+      // Password is not required for social login users according to schema
     });
+  } else if (!user.googleId && googleId) {
+    // If user exists by email but doesn't have googleId, update it
+    user.googleId = googleId;
+    await user.save();
   }
 
   const token = createToken(user._id);
@@ -196,7 +212,7 @@ const socialLogin = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Social login successful',
-    data: { user, token }
+    data: { user, token },
   });
 });
 

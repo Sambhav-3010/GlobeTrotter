@@ -138,6 +138,7 @@ export default function AuthPage() {
       const email = user.email || "";
       const f_name = user.displayName?.split(" ")[0] || "";
       const l_name = user.displayName?.split(" ").slice(1).join(" ") || "";
+      const googleId = user.uid;
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/social-login`,
@@ -147,7 +148,7 @@ export default function AuthPage() {
             "Content-Type": "application/json",
           },
           credentials: "include",
-          body: JSON.stringify({ f_name, l_name, email }),
+          body: JSON.stringify({ f_name, l_name, email, googleId }),
         }
       );
 
