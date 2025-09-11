@@ -274,8 +274,8 @@ export default function ProfilePage() {
                     {trip.place_of_visit}
                   </h4>
                   <p className="text-sm text-gray-700 mb-2">
-                    {new Date(trip.start_date).toLocaleDateString()} –{" "}
-                    {new Date(trip.end_date).toLocaleDateString()} (
+                    {new Date(trip.start_date).toLocaleDateString("en-GB")} –{" "}
+                    {new Date(trip.end_date).toLocaleDateString("en-GB")} (
                     {trip.duration_of_visit} days)
                   </p>
                   <div className="flex justify-between items-center mt-4">

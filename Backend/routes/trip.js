@@ -167,7 +167,6 @@ router.get(
   protect,
   asyncHandler(async (req, res) => {
     const trip = await Trip.findById(req.params.tripId);
-    console.log("Fetched trip:", trip);
     if (!trip) {
       res.status(404);
       throw new Error('Trip not found');

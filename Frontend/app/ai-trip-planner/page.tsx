@@ -136,6 +136,7 @@ export default function AITripPlannerPage() {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: "include",
             body: JSON.stringify({ prompt: finalPrompt }),
         });
 

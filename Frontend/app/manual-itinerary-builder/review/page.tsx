@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useAlert } from "../../context/AlertContext";
 
 // For activities/hotels/travel, add extra optional fields for display
 interface ItemBase {
@@ -54,6 +55,7 @@ export default function ReviewPage() {
     hotels: [],
     activities: [],
   });
+  const { showAlert } = useAlert();
 
   useEffect(() => {
     const savedDetails = localStorage.getItem("trip-details");
@@ -110,13 +112,13 @@ export default function ReviewPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-          credentials: "include", // Ensure cookies are sent with the request
+          credentials: "include",
         }
       );
 
       if (!res.ok) throw new Error("Failed to save trip");
       const data = await res.json();
-      alert("Trip saved!");
+      showAlert("Google login successful!", "success");
       router.push(`/trips/${data.trip._id}`);
     } catch (err) {
       if (err instanceof Error) {
