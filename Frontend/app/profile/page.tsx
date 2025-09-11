@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [myTrips, setMyTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [travelHistory, setTravelHistory] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -80,7 +81,13 @@ export default function ProfilePage() {
     fetchUserData();
   }, [router]);
 
-  if (loading) return <div className="p-8 text-white">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500 flex items-center justify-center">
+        <p className="text-white text-2xl font-bold">LOADING TRIP DETAILS...</p>
+      </div>
+    );
+  }
   if (!userData) return null;
 
   return (
