@@ -2,13 +2,12 @@ const express = require("express");
 const fetch = require("node-fetch");
 const { getJson } = require("serpapi");
 const asyncHandler = require("../utils/asyncHandler");
-
 const router = express.Router();
 
 router.post(
   "/flights",
   asyncHandler(async (req, res) => {
-    const { departure_id, arrival_id, outbound_date, return_date } = req.body;
+    const { arrival_id, outbound_date, return_date, departure_id } = req.body;
 
     const json = await getJson({
       engine: "google_flights",
@@ -30,11 +29,11 @@ router.get(
     const { from, to } = req.query; // Changed from req.body to req.query
     const url = `https://irctc1.p.rapidapi.com/api/v3/trainBetweenStations?fromStationCode=${from}&toStationCode=${to}`;
     const options = {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'x-rapidapi-key': process.env.RAPID_API_KEY, // Use environment variable
-        'x-rapidapi-host': 'irctc1.p.rapidapi.com'
-      }
+        "x-rapidapi-key": process.env.RAPID_API_KEY, // Use environment variable
+        "x-rapidapi-host": "irctc1.p.rapidapi.com",
+      },
     };
 
     const response = await fetch(url, options);
@@ -49,11 +48,11 @@ router.get(
     const { trainno, FromSt, ToSt } = req.query; // Changed from req.body to req.query
     const url = `https://irctc1.p.rapidapi.com/api/v2/getFare?trainNo=${trainno}&fromStationCode=${FromSt}&toStationCode=${ToSt}`;
     const options = {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'x-rapidapi-key': process.env.RAPID_API_KEY, // Use environment variable
-        'x-rapidapi-host': 'irctc1.p.rapidapi.com'
-      }
+        "x-rapidapi-key": process.env.RAPID_API_KEY, // Use environment variable
+        "x-rapidapi-host": "irctc1.p.rapidapi.com",
+      },
     };
 
     const response = await fetch(url, options);

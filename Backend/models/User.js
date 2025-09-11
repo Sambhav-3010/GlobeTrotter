@@ -48,7 +48,9 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
-      required: function() { return !this.googleId; }, // Required if not a Google-authenticated user
+      required: function () {
+        return !this.googleId;
+      },
     },
     numberOfTrips: {
       type: Number,
@@ -59,7 +61,13 @@ const userSchema = new Schema(
       type: String,
       trim: true,
     },
-    googleId: { type: String },
+    placesVisited: {
+      type: [String],   // <--- missing field
+      default: [],
+    },
+    googleId: {
+      type: String,
+    },
   },
   {
     timestamps: true,

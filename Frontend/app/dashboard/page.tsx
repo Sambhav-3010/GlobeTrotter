@@ -60,7 +60,6 @@ export default function DashboardPage() {
         credentials: "include",
       }
     );
-    console.log("Logout response status:", response);
     if (!response.ok) {
       showAlert("Error signing out. Please try again");
       return;

@@ -41,11 +41,9 @@ function getAirportIataByName(city: string) {
   for (const iata in airportsData) {
     const airport = airportsData[iata];
     if (airport.city.toLowerCase().includes(lowerName)) {
-      console.log(`Found airport: ${airport.name} - IATA: ${airport.iata || "N/A"}`);
       return airport.iata || null;
     }
   }
-  console.log(`Airport not found: ${city}`);
   return null;
 }
 
@@ -56,40 +54,45 @@ export default function TravelPage() {
   const [selectedTravel, setSelectedTravel] = useState<TravelItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sampleFlights, setSampleFlights] = useState<TravelItem[]>([]);
-  const [travelType, setTravelType] = useState<"all" | "flight" | "train">("all");
+  const [travelType, setTravelType] = useState<"all" | "flight" | "train">(
+    "all"
+  );
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const saved = JSON.parse(localStorage.getItem("trip-details") || "{}");
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-        console.log("Saved trip details:", saved);
-
-        if (!saved.destination || !saved.startDate || !saved.endDate || !user.city) {
+        if (!saved.destination || !saved.startDate || !saved.endDate || !saved.source) {
           console.warn("Missing required trip details or user info");
           return;
         }
 
         const payload = {
-          departure_id: getAirportIataByName(user.city),
+          departure_id: getAirportIataByName(saved.source),
           arrival_id: getAirportIataByName(saved.destination),
           outbound_date: saved.startDate,
           return_date: saved.endDate,
         };
 
-        console.log("Sending travel data:", payload);
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/flights`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/flights`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            credentials: "include",
+          }
+        );
 
         const data = await response.json();
-        console.log("Received travel data:", data);
+
         if (response.ok && (data?.best_flights || data?.other_flights)) {
-          const parsedFlights: TravelItem[] = data.best_flights.map(
+          let allFlights = data?.best_flights;
+          if (allFlights.length === 0) {
+            allFlights = data?.other_flights.slice(0, 10);
+          }
+
+          const parsedFlights: TravelItem[] = allFlights.map(
             (flight: any, index: number) => {
               const firstSeg = flight.flights[0];
               const lastSeg = flight.flights[flight.flights.length - 1];
@@ -143,7 +146,9 @@ export default function TravelPage() {
       const matchesType = travelType === "all" || item.type === travelType;
       const matchesSearch =
         (item.title?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-        (item.description?.toLowerCase() || "").includes(searchQuery.toLowerCase());
+        (item.description?.toLowerCase() || "").includes(
+          searchQuery.toLowerCase()
+        );
       return matchesType && matchesSearch;
     });
   };
@@ -165,7 +170,9 @@ export default function TravelPage() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               BACK
             </Button>
-            <div className="text-white text-2xl font-bold">TRAVEL SELECTION</div>
+            <div className="text-white text-2xl font-bold">
+              TRAVEL SELECTION
+            </div>
           </div>
           <Button
             onClick={handleContinue}
@@ -197,7 +204,10 @@ export default function TravelPage() {
                     className="pl-10 border-2 border-black"
                   />
                 </div>
-                <Select value={travelType} onValueChange={(value: any) => setTravelType(value)}>
+                <Select
+                  value={travelType}
+                  onValueChange={(value: any) => setTravelType(value)}
+                >
                   <SelectTrigger className="w-32 border-2 border-black">
                     <SelectValue />
                   </SelectTrigger>
@@ -212,7 +222,10 @@ export default function TravelPage() {
               {/* Results */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {getFilteredResults().map((item) => (
-                  <div key={item.id} className="bg-gray-50 border-2 border-black p-4">
+                  <div
+                    key={item.id}
+                    className="bg-gray-50 border-2 border-black p-4"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -221,15 +234,23 @@ export default function TravelPage() {
                           ) : (
                             <Train className="w-5 h-5 text-green-500" />
                           )}
-                          <h4 className="font-black text-black uppercase">{item.title}</h4>
+                          <h4 className="font-black text-black uppercase">
+                            {item.title}
+                          </h4>
                         </div>
-                        <p className="text-sm text-black font-medium mb-2">{item.description}</p>
+                        <p className="text-sm text-black font-medium mb-2">
+                          {item.description}
+                        </p>
                         <div className="grid grid-cols-2 gap-2 text-xs text-black font-bold">
-                          <span className="bg-yellow-400 w-24 px-2 py-1">Price: {item.price}</span>
+                          <span className="bg-yellow-400 w-24 px-2 py-1">
+                            Price: {item.price}
+                          </span>
                           <span>Duration: {item.duration}</span>
                           <span>Departure: {item.departure}</span>
                           <span>Arrival: {item.arrival}</span>
-                          {item.type === "flight" && <span>Type: {item.type_flight}</span>}
+                          {item.type === "flight" && (
+                            <span>Type: {item.type_flight}</span>
+                          )}
                         </div>
                       </div>
                       <Button
@@ -247,7 +268,9 @@ export default function TravelPage() {
 
           {/* Selected Travel */}
           <div className="bg-white border-4 border-black p-6">
-            <h3 className="text-lg font-black text-black mb-4 uppercase">Your Selected Travel</h3>
+            <h3 className="text-lg font-black text-black mb-4 uppercase">
+              Your Selected Travel
+            </h3>
 
             {selectedTravel.length > 0 ? (
               <div className="space-y-4">
@@ -262,7 +285,9 @@ export default function TravelPage() {
                       <div className="flex items-start gap-3 flex-1">
                         <div
                           className={`w-8 h-8 border-2 border-black flex items-center justify-center flex-shrink-0 ${
-                            item.type === "flight" ? "bg-blue-500" : "bg-green-500"
+                            item.type === "flight"
+                              ? "bg-blue-500"
+                              : "bg-green-500"
                           }`}
                         >
                           {item.type === "flight" ? (
@@ -272,8 +297,12 @@ export default function TravelPage() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-black text-black uppercase">{item.title}</h4>
-                          <p className="text-sm text-black font-medium mb-2">{item.description}</p>
+                          <h4 className="font-black text-black uppercase">
+                            {item.title}
+                          </h4>
+                          <p className="text-sm text-black font-medium mb-2">
+                            {item.description}
+                          </p>
                           <div className="grid grid-cols-2 gap-1 text-xs text-black font-bold">
                             <span>
                               {item.departure} → {item.arrival}
@@ -297,12 +326,15 @@ export default function TravelPage() {
 
                 <div className="pt-4 border-t-2 border-black">
                   <div className="flex justify-between items-center">
-                    <span className="text-black font-bold">TOTAL TRAVEL COST:</span>
+                    <span className="text-black font-bold">
+                      TOTAL TRAVEL COST:
+                    </span>
                     <span className="text-xl font-black text-black">
                       ₹
                       {selectedTravel
                         .reduce(
-                          (sum, item) => sum + Number(item.price.replace(/[₹,]/g, "")),
+                          (sum, item) =>
+                            sum + Number(item.price.replace(/[₹,]/g, "")),
                           0
                         )
                         .toLocaleString()}

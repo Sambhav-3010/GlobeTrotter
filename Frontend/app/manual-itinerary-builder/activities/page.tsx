@@ -62,7 +62,8 @@ export default function LocalPlacesPage() {
           body: JSON.stringify({
             q: searchTerm,
             location: searchLocation
-          })
+          }),
+          credentials: "include"
         }
       );
 

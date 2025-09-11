@@ -9,6 +9,7 @@ const cors = require("cors");
 const geminiRoutes = require('./routes/gemini');
 const travelHistoryRoutes = require('./routes/travelHistory');
 const errorHandler = require('./middleware/errorMiddleware');
+const protect = require('./middleware/protect')
 
 const app = express();
 
@@ -30,12 +31,12 @@ mongoose
 app.get("/", (req, res) => {
   res.send(`<html><body><h1>Welcome to GhumoFiro API</h1></body></html>`);
 });
-app.use("/auth", authRoutes);
-app.use("/api", flightsRouter);
-app.use("/trip", tripRoutes);
-app.use('/gemini', geminiRoutes);
-app.use("/newtrip", tripRoutes);
-app.use("/travelhistory", travelHistoryRoutes);
+app.use("/auth", protect, authRoutes);
+app.use("/api", protect,flightsRouter);
+app.use("/trip", protect, tripRoutes);
+app.use('/gemini',protect, geminiRoutes);
+app.use("/newtrip", protect,tripRoutes);
+app.use("/travelhistory", protect, travelHistoryRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

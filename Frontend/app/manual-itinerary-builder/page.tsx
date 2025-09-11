@@ -23,6 +23,14 @@ interface TripDetails {
 
 const steps = [
   {
+    id: "travel",
+    title: "TRAVEL",
+    description: "Choose flights and trains",
+    icon: Plane,
+    route: "/manual-itinerary-builder/travel",
+    color: "bg-blue-500",
+  },
+  {
     id: "hotels",
     title: "HOTELS",
     description: "Select accommodations",
@@ -37,14 +45,6 @@ const steps = [
     icon: Camera,
     route: "/manual-itinerary-builder/activities",
     color: "bg-purple-500",
-  },
-  {
-    id: "travel",
-    title: "TRAVEL",
-    description: "Choose flights and trains",
-    icon: Plane,
-    route: "/manual-itinerary-builder/travel",
-    color: "bg-blue-500",
   },
 ];
 
@@ -154,9 +154,7 @@ export default function ManualItineraryBuilderPage() {
           {steps.map((step, index) => {
             const Icon = step.icon;
             const isCompleted = completedSteps.includes(step.id);
-            const isLast = index === steps.length - 1;
-            const oddSteps = steps.length % 2 !== 0;
-            const cardClass = oddSteps && isLast ? "md:col-span-2" : "";
+            const cardClass = step.id === "travel" ? "col-span-full" : "";
 
             return (
               <motion.div

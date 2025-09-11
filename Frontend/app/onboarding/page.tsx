@@ -190,13 +190,6 @@ export default function OnboardingPage() {
     }
   }
 
-  const handleSkip = () => {
-    localStorage.removeItem('onboardingRequired'); // Clear the flag even if skipped
-    localStorage.removeItem('travelHistoryRequired'); // Clear travelHistoryRequired as well
-    setIsSubmitting(true); // Set submitting flag to true for skip as well
-    router.push("/dashboard");
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
       <div className="bg-black p-4">
@@ -371,13 +364,6 @@ export default function OnboardingPage() {
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   BACK
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleSkip}
-                  className="h-12 px-6 bg-yellow-400 hover:bg-yellow-500 text-black font-bold border-2 border-black"
-                >
-                  SKIP
                 </Button>
                 <Button
                   type="submit"

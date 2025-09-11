@@ -4,6 +4,7 @@ const Trip = require("../models/Trip");
 const router = express.Router();
 const protect = require("../middleware/protect");
 const asyncHandler = require("../utils/asyncHandler");
+const history = require("../models/History")
 
 router.post(
   "/history",
@@ -29,10 +30,6 @@ router.post(
         res.status(400);
         throw new Error("Each trip must have a valid end_date (date string)");
       }
-      if (typeof trip.duration_of_visit !== 'number' || trip.duration_of_visit <= 0) {
-        res.status(400);
-        throw new Error("Each trip must have a valid duration_of_visit (positive number)");
-      }
       if (typeof trip.overall_budget !== 'number' || trip.overall_budget <= 0) {
         res.status(400);
         throw new Error("Each trip must have a valid overall_budget (positive number)");
@@ -44,9 +41,9 @@ router.post(
       place_of_visit: trip.place_of_visit,
       start_date: trip.start_date,
       end_date: trip.end_date,
-      duration_of_visit: trip.duration_of_visit,
       overall_budget: trip.overall_budget,
     })));
+    
     const updateUser = await User.findByIdAndUpdate(req.user._id, {
       $push: {
         placesVisited: { $each: addTrip.map(trip => trip.place_of_visit) }
@@ -65,6 +62,22 @@ router.post(
     }
 
     res.status(200).json(addTrip);
+  })
+);
+
+
+router.get(
+  "/history",
+  protect,
+  asyncHandler(async (req, res) => {
+    try{
+      const userId = req.user._id;
+      const trips = await history.find({userId})
+      res.status(200).json(trips);
+    } catch {
+      res.status(404).json({error : "No trips exists"});
+    }
+    
   })
 );
 

@@ -65,7 +65,7 @@ const questions = [
     "Great! When are you planning to travel? (e.g., August 20th to August 27th)",
     "Got it. How many people are traveling?",
     "Perfect. What type of trip is this? (e.g., Friends Trip, Honeymoon, Solo)",
-    "And finally, what's your approximate budget per person? (e.g., $1500 USD)"
+    "And finally, what's your approximate budget per person? (e.g., 20000 INR)"
 ];
 
 export default function AITripPlannerPage() {
@@ -210,7 +210,6 @@ export default function AITripPlannerPage() {
 
   const handleSaveTrip = () => {
     if (!tripName.trim() || !selectedItinerary) return
-    console.log("Saving trip:", tripName, selectedItinerary)
     setShowSaveDialog(false)
     setTripName("")
     const successMessage: Message = {
@@ -224,7 +223,6 @@ export default function AITripPlannerPage() {
 
   const handleInviteCollaborator = () => {
     if (!collaboratorEmail.trim()) return
-    console.log("Inviting collaborator:", collaboratorEmail, collaboratorRole)
     setShowCollabDialog(false)
     setCollaboratorEmail("")
     const successMessage: Message = {

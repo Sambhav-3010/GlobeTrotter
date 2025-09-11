@@ -66,7 +66,6 @@ export default function ReviewPage() {
       hotels: hotelSelections ? JSON.parse(hotelSelections) : [],
       activities: activitySelections ? JSON.parse(activitySelections) : [],
     };
-    console.log("activities:", loadedSelections.activities);
     setSelections(loadedSelections);
   }, []);
 

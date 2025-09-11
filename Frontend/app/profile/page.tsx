@@ -10,27 +10,21 @@ import {
   MapPin,
   Calendar,
   Globe,
-  Languages,
   BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+
 
 export default function ProfilePage() {
   const router = useRouter();
   const [userData, setUserData] = useState<any | null>(null);
   const [myTrips, setMyTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [travelHistory, setTravelHistory] = useState<any[]>([]);
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-        if (!user?._id) {
-          router.push("/auth");
-          return;
-        }
-
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/me`,
           {
@@ -47,9 +41,8 @@ export default function ProfilePage() {
         const data = await res.json();
         setUserData(data);
 
-        // Fetch user's trips/itineraries
         const tripsRes = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/trips/user/${user._id}`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/trip/my-trips`,
           {
             method: "GET",
             credentials: "include",
@@ -58,16 +51,27 @@ export default function ProfilePage() {
             },
           }
         );
-
         if (tripsRes.ok) {
           const tripsData = await tripsRes.json();
-          setMyTrips(tripsData);
+          setMyTrips(tripsData.trips);
         } else {
           setMyTrips([]);
         }
+
+        const placesResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/trip/history`,
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const placesData = await placesResponse.json();
+        setTravelHistory(placesData);
       } catch (err) {
         console.error(err);
-        router.push("/auth");
       } finally {
         setLoading(false);
       }
@@ -80,7 +84,7 @@ export default function ProfilePage() {
   if (!userData) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
+    <div className="min-h-screen pb-10 bg-gradient-to-br from-red-500 via-red-600 to-orange-500">
       {/* Header */}
       <div className="bg-black p-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -149,7 +153,7 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 <p className="text-3xl font-black text-black">
-                  {userData.numberOfTrips || 0}
+                  {userData.numberOfTrips}
                 </p>
                 <p className="text-sm font-bold text-black uppercase">
                   Total Trips
@@ -185,63 +189,108 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3 mb-6">
                 <Globe className="w-6 h-6 text-black" />
                 <h3 className="text-xl font-black text-black uppercase">
-                  Places Visited
+                  Travel History
                 </h3>
                 <div className="bg-yellow-400 border-2 border-black px-3 py-1">
                   <span className="text-black font-bold text-sm">
-                    {userData.placesVisited?.length || 0}
+                    {travelHistory?.length || 0}
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {userData.placesVisited?.length > 0 ? (
-                  userData.placesVisited.map((place: string, index: number) => (
-                    <div
-                      key={index}
-                      className="bg-gray-100 border-2 border-black px-3 py-1 text-black font-bold text-sm uppercase"
+              {travelHistory?.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {travelHistory.map((trip: any, index: number) => (
+                    <motion.div
+                      key={trip._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + index * 0.05 }}
+                      className="bg-gradient-to-br from-yellow-100 via-white to-orange-100 
+                     border-4 border-black p-5 rounded-xl shadow-md 
+                     hover:shadow-lg transition-all"
                     >
-                      {place}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-black font-medium">
-                    No places visited yet
-                  </p>
-                )}
-              </div>
+                      <h4 className="text-lg font-extrabold text-black mb-2">
+                        {trip.place_of_visit}
+                      </h4>
+                      <p className="text-sm text-gray-700 mb-1">
+                        {new Date(trip.start_date).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}{" "}
+                        –{" "}
+                        {new Date(trip.end_date).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}{" "}
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        Budget: ₹{trip.overall_budget.toLocaleString()}
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-black font-medium">
+                  No travel history available
+                </p>
+              )}
             </motion.div>
           </div>
         </div>
       </div>
 
       {/* My Itineraries */}
-      <motion.div className="bg-white border-4 border-black p-8">
-        <h3 className="text-xl font-black uppercase mb-4">My Itineraries</h3>
-        {myTrips.length === 0 ? (
-          <p>No itineraries created yet</p>
-        ) : (
-          <div className="space-y-4">
-            {myTrips.map((trip) => (
-              <div
-                key={trip._id}
-                className="bg-gray-50 border-2 border-black p-4 cursor-pointer hover:bg-gray-100"
-                onClick={() => router.push(`/trips/${trip._id}`)}
-              >
-                <h4 className="font-bold">{trip.place_of_visit}</h4>
-                <p>
-                  {new Date(trip.start_date).toLocaleDateString()} -{" "}
-                  {new Date(trip.end_date).toLocaleDateString()} (
-                  {trip.duration_of_visit} days)
-                </p>
-                <p>
-                  Budget: ₹{trip.overall_budget.toLocaleString()} | Spent: ₹
-                  {trip.total_spent.toLocaleString()}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+      <motion.div className="max-w-6xl mx-auto mt-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white border-4 border-black p-8"
+        >
+          <h3 className="text-2xl font-black uppercase mb-6 text-center text-black">
+            My Itineraries
+          </h3>
+
+          {myTrips.length === 0 ? (
+            <p className="text-center text-black font-medium">
+              No itineraries created yet
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {myTrips.map((trip, index) => (
+                <motion.div
+                  key={trip._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                  onClick={() => router.push(`/trips/${trip._id}`)}
+                  className="group relative bg-gradient-to-br from-red-300 via-red-100 to-orange-500
+                       border-4 border-black p-6 rounded-2xl shadow-lg cursor-pointer 
+                       hover:-translate-y-2 hover:shadow-2xl transition-all duration-300"
+                >
+                  <h4 className="text-lg font-extrabold text-black mb-2 group-hover:underline">
+                    {trip.place_of_visit}
+                  </h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    {new Date(trip.start_date).toLocaleDateString()} –{" "}
+                    {new Date(trip.end_date).toLocaleDateString()} (
+                    {trip.duration_of_visit} days)
+                  </p>
+                  <div className="flex justify-between items-center mt-4">
+                    <p className="text-sm font-bold text-black">
+                      Budget: ₹{trip.overall_budget.toLocaleString()}
+                    </p>
+                    <p className="text-sm font-medium text-red-600">
+                      Spent: ₹{trip.total_spent.toLocaleString()}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </motion.div>
       </motion.div>
     </div>
   );

@@ -19,11 +19,6 @@ const travelHistorySchema = new mongoose.Schema({
     type: Date,
     required: false, // Can be optional if user doesn't provide it
   },
-  duration_of_visit: {
-    type: Number,
-    required: false,
-    min: 0,
-  },
   overall_budget: {
     type: Number,
     required: false,

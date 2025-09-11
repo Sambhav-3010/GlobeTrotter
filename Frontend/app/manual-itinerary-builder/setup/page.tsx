@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowLeft, MapPin, Calendar, DollarSign, Clock } from "lucide-react"
+import { ArrowLeft, MapPin, Calendar, IndianRupee, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 export default function TripSetupPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
+    source: "",
     destination: "",
     budget: "",
     startDate: "",
@@ -91,6 +92,20 @@ export default function TripSetupPage() {
           </div>
 
           <div className="space-y-6">
+            {/* Source */}
+            <div>
+              <Label className="text-black font-bold text-lg uppercase mb-2 block">
+                <MapPin className="w-5 h-5 inline mr-2" />
+                Departure
+              </Label>
+              <Input
+                placeholder="Where are you traveling from?"
+                value={formData.source}
+                onChange={(e) => handleInputChange("source", e.target.value)}
+                className="border-2 border-black text-black font-medium h-12 text-lg"
+              />
+            </div>
+
             {/* Destination */}
             <div>
               <Label className="text-black font-bold text-lg uppercase mb-2 block">
@@ -108,8 +123,8 @@ export default function TripSetupPage() {
             {/* Budget */}
             <div>
               <Label className="text-black font-bold text-lg uppercase mb-2 block">
-                <DollarSign className="w-5 h-5 inline mr-2" />
-                Total Budget (USD)
+                <IndianRupee className="w-5 h-5 inline mr-2" />
+                Total Budget (INR)
               </Label>
               <Input
                 type="number"

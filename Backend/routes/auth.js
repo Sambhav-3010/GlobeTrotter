@@ -22,7 +22,7 @@ router.post("/social-login", socialLogin);
 
 router.post("/logout", logout);
 
-router.get("/me", protect, asyncHandler(async (req, res) => {
+router.post("/me", protect, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "f_name l_name phoneNumber city age recentlyVisited email numberOfTrips"
   );
